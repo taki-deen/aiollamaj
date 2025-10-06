@@ -62,7 +62,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user, onBack }) => {
         setUsers(response.data.data.users);
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || (locale === 'ar' ? 'فشل في تحميل المستخدمين' : 'Failed to load users'));
+      setError(err.response?.data?.message || t('loadFailed'));
     } finally {
       setLoading(false);
     }
@@ -93,12 +93,12 @@ const UserManagement: React.FC<UserManagementProps> = ({ user, onBack }) => {
       });
 
       if (response.data.success) {
-        setSuccess(locale === 'ar' ? 'تم تحديث المستخدم بنجاح' : 'User updated successfully');
+        setSuccess(t('userUpdated'));
         setShowEditModal(false);
         fetchUsers();
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || (locale === 'ar' ? 'فشل في تحديث المستخدم' : 'Failed to update user'));
+      setError(err.response?.data?.message || t('updateFailed'));
     } finally {
       setLoading(false);
     }
@@ -115,12 +115,12 @@ const UserManagement: React.FC<UserManagementProps> = ({ user, onBack }) => {
       });
 
       if (response.data.success) {
-        setSuccess(locale === 'ar' ? 'تم حذف المستخدم بنجاح' : 'User deleted successfully');
+        setSuccess(t('userDeleted'));
         setShowDeleteModal(false);
         fetchUsers();
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || (locale === 'ar' ? 'فشل في حذف المستخدم' : 'Failed to delete user'));
+      setError(err.response?.data?.message || t('deleteFailed'));
     } finally {
       setLoading(false);
     }
@@ -165,7 +165,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user, onBack }) => {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-300">
-            {locale === 'ar' ? 'جاري تحميل المستخدمين...' : 'Loading users...'}
+            {t('loading')}
           </p>
         </div>
       </div>
@@ -179,15 +179,15 @@ const UserManagement: React.FC<UserManagementProps> = ({ user, onBack }) => {
         <div className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                {locale === 'ar' ? 'إدارة المستخدمين' : 'User Management'}
-              </h1>
-              <p className="text-gray-600 dark:text-gray-300">
-                {locale === 'ar' 
-                  ? `مرحباً ${user.firstName}، إدارة جميع المستخدمين في النظام` 
-                  : `Welcome ${user.firstName}, manage all users in the system`
-                }
-              </p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              {t('userManagement')}
+            </h1>
+            <p className="text-gray-600 dark:text-gray-300">
+              {locale === 'ar' 
+                ? `مرحباً ${user.firstName}، إدارة جميع المستخدمين في النظام` 
+                : `Welcome ${user.firstName}, manage all users in the system`
+              }
+            </p>
             </div>
             <button
               onClick={onBack}
@@ -197,7 +197,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user, onBack }) => {
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
-                {locale === 'ar' ? 'العودة' : 'Back'}
+                {t('back')}
               </span>
             </button>
           </div>
@@ -214,7 +214,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user, onBack }) => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                  {locale === 'ar' ? 'إجمالي المستخدمين' : 'Total Users'}
+                  {t('totalUsers')}
                 </p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
               </div>
@@ -230,7 +230,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user, onBack }) => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                  {locale === 'ar' ? 'نشط' : 'Active'}
+                  {t('active')}
                 </p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.active}</p>
               </div>
@@ -246,7 +246,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user, onBack }) => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                  {locale === 'ar' ? 'غير نشط' : 'Inactive'}
+                  {t('inactive')}
                 </p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.inactive}</p>
               </div>
@@ -262,7 +262,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user, onBack }) => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                  {locale === 'ar' ? 'مديرين' : 'Admins'}
+                  {t('admins')}
                 </p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.admins}</p>
               </div>
@@ -278,7 +278,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user, onBack }) => {
               </div>
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                  {locale === 'ar' ? 'مستخدمين' : 'Users'}
+                  {t('users')}
                 </p>
                 <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.users}</p>
               </div>
@@ -292,7 +292,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user, onBack }) => {
             <div className="flex-1">
               <input
                 type="text"
-                placeholder={locale === 'ar' ? 'البحث في المستخدمين...' : 'Search users...'}
+                placeholder={t('searchUsers')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-700 dark:text-white"
@@ -304,9 +304,9 @@ const UserManagement: React.FC<UserManagementProps> = ({ user, onBack }) => {
                 onChange={(e) => setFilterRole(e.target.value)}
                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-700 dark:text-white"
               >
-                <option value="all">{locale === 'ar' ? 'جميع الأدوار' : 'All Roles'}</option>
-                <option value="admin">{locale === 'ar' ? 'مدير' : 'Admin'}</option>
-                <option value="user">{locale === 'ar' ? 'مستخدم' : 'User'}</option>
+                <option value="all">{t('allRoles')}</option>
+                <option value="admin">{t('admin')}</option>
+                <option value="user">{t('user')}</option>
               </select>
             </div>
             <div>
@@ -315,9 +315,9 @@ const UserManagement: React.FC<UserManagementProps> = ({ user, onBack }) => {
                 onChange={(e) => setFilterStatus(e.target.value)}
                 className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-700 dark:text-white"
               >
-                <option value="all">{locale === 'ar' ? 'جميع الحالات' : 'All Status'}</option>
-                <option value="active">{locale === 'ar' ? 'نشط' : 'Active'}</option>
-                <option value="inactive">{locale === 'ar' ? 'غير نشط' : 'Inactive'}</option>
+                <option value="all">{t('allStatus')}</option>
+                <option value="active">{t('active')}</option>
+                <option value="inactive">{t('inactive')}</option>
               </select>
             </div>
           </div>
@@ -363,13 +363,10 @@ const UserManagement: React.FC<UserManagementProps> = ({ user, onBack }) => {
               </svg>
             </div>
             <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">
-              {locale === 'ar' ? 'لا توجد مستخدمين' : 'No users found'}
+              {t('noReports')}
             </h3>
             <p className="text-gray-600 dark:text-gray-300">
-              {locale === 'ar' 
-                ? 'لا توجد مستخدمين تطابق معايير البحث' 
-                : 'No users match the search criteria'
-              }
+              {t('noReportsMessage')}
             </p>
           </div>
         ) : (
@@ -397,14 +394,14 @@ const UserManagement: React.FC<UserManagementProps> = ({ user, onBack }) => {
                               ? 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200'
                               : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200'
                           }`}>
-                            {locale === 'ar' ? (userItem.role === 'admin' ? 'مدير' : 'مستخدم') : userItem.role}
+                            {userItem.role === 'admin' ? t('admin') : t('user')}
                           </span>
                           <span className={`px-3 py-1 rounded-full text-xs font-medium ${
                             userItem.isActive 
                               ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
                               : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
                           }`}>
-                            {locale === 'ar' ? (userItem.isActive ? 'نشط' : 'غير نشط') : (userItem.isActive ? 'Active' : 'Inactive')}
+                            {userItem.isActive ? t('active') : t('inactive')}
                           </span>
                         </div>
                       </div>
@@ -412,18 +409,18 @@ const UserManagement: React.FC<UserManagementProps> = ({ user, onBack }) => {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-gray-600 dark:text-gray-300">
                         <div>
                           <span className="font-medium">
-                            {locale === 'ar' ? 'البريد الإلكتروني:' : 'Email:'}
+                            {t('email')}:
                           </span> {userItem.email}
                         </div>
                         <div>
                           <span className="font-medium">
-                            {locale === 'ar' ? 'تاريخ التسجيل:' : 'Registered:'}
+                            {t('registered')}:
                           </span> {formatDate(userItem.createdAt)}
                         </div>
                         {userItem.lastLogin && (
                           <div>
                             <span className="font-medium">
-                              {locale === 'ar' ? 'آخر دخول:' : 'Last Login:'}
+                              {t('lastLogin')}:
                             </span> {formatDate(userItem.lastLogin)}
                           </div>
                         )}
@@ -468,7 +465,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user, onBack }) => {
               <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between">
                   <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    {locale === 'ar' ? 'تعديل المستخدم' : 'Edit User'}
+                    {t('editUser')}
                   </h3>
                   <button
                     onClick={() => setShowEditModal(false)}
@@ -484,7 +481,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user, onBack }) => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      {locale === 'ar' ? 'الاسم الأول' : 'First Name'}
+                      {t('firstName')}
                     </label>
                     <input
                       type="text"
@@ -496,7 +493,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user, onBack }) => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      {locale === 'ar' ? 'اسم العائلة' : 'Last Name'}
+                      {t('lastName')}
                     </label>
                     <input
                       type="text"
@@ -508,7 +505,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user, onBack }) => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      {locale === 'ar' ? 'اسم المستخدم' : 'Username'}
+                      {t('username')}
                     </label>
                     <input
                       type="text"
@@ -520,7 +517,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ user, onBack }) => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      {locale === 'ar' ? 'البريد الإلكتروني' : 'Email'}
+                      {t('email')}
                     </label>
                     <input
                       type="email"
@@ -532,28 +529,28 @@ const UserManagement: React.FC<UserManagementProps> = ({ user, onBack }) => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      {locale === 'ar' ? 'الدور' : 'Role'}
+                      {t('role')}
                     </label>
                     <select
                       value={editForm.role}
                       onChange={(e) => setEditForm({...editForm, role: e.target.value})}
                       className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-700 dark:text-white"
                     >
-                      <option value="user">{locale === 'ar' ? 'مستخدم' : 'User'}</option>
-                      <option value="admin">{locale === 'ar' ? 'مدير' : 'Admin'}</option>
+                      <option value="user">{t('user')}</option>
+                      <option value="admin">{t('admin')}</option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      {locale === 'ar' ? 'الحالة' : 'Status'}
+                      {t('status')}
                     </label>
                     <select
                       value={editForm.isActive ? 'active' : 'inactive'}
                       onChange={(e) => setEditForm({...editForm, isActive: e.target.value === 'active'})}
                       className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-700 dark:text-white"
                     >
-                      <option value="active">{locale === 'ar' ? 'نشط' : 'Active'}</option>
-                      <option value="inactive">{locale === 'ar' ? 'غير نشط' : 'Inactive'}</option>
+                      <option value="active">{t('active')}</option>
+                      <option value="inactive">{t('inactive')}</option>
                     </select>
                   </div>
                 </div>
@@ -563,14 +560,14 @@ const UserManagement: React.FC<UserManagementProps> = ({ user, onBack }) => {
                     onClick={() => setShowEditModal(false)}
                     className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white transition-colors duration-200"
                   >
-                    {locale === 'ar' ? 'إلغاء' : 'Cancel'}
+                    {t('cancel')}
                   </button>
                   <button
                     type="submit"
                     disabled={loading}
                     className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200 disabled:opacity-50"
                   >
-                    {loading ? (locale === 'ar' ? 'جاري الحفظ...' : 'Saving...') : (locale === 'ar' ? 'حفظ التغييرات' : 'Save Changes')}
+                    {loading ? t('saving') : t('save')}
                   </button>
                 </div>
               </form>
@@ -591,16 +588,13 @@ const UserManagement: React.FC<UserManagementProps> = ({ user, onBack }) => {
                   </div>
                   <div className="ml-3">
                     <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                      {locale === 'ar' ? 'تأكيد الحذف' : 'Confirm Delete'}
+                      {t('confirmDelete')}
                     </h3>
                   </div>
                 </div>
                 <div className="mb-6">
                   <p className="text-sm text-gray-600 dark:text-gray-300">
-                    {locale === 'ar' 
-                      ? `هل أنت متأكد من حذف المستخدم "${selectedUser.firstName} ${selectedUser.lastName}"؟ لا يمكن التراجع عن هذا الإجراء.`
-                      : `Are you sure you want to delete user "${selectedUser.firstName} ${selectedUser.lastName}"? This action cannot be undone.`
-                    }
+                    {t('deleteUserMessage')}
                   </p>
                 </div>
                 <div className="flex justify-end space-x-3">
@@ -608,14 +602,14 @@ const UserManagement: React.FC<UserManagementProps> = ({ user, onBack }) => {
                     onClick={() => setShowDeleteModal(false)}
                     className="px-4 py-2 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white transition-colors duration-200"
                   >
-                    {locale === 'ar' ? 'إلغاء' : 'Cancel'}
+                    {t('cancel')}
                   </button>
                   <button
                     onClick={handleDeleteUser}
                     disabled={loading}
                     className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-200 disabled:opacity-50"
                   >
-                    {loading ? (locale === 'ar' ? 'جاري الحذف...' : 'Deleting...') : (locale === 'ar' ? 'حذف' : 'Delete')}
+                    {loading ? t('deleting') : t('delete')}
                   </button>
                 </div>
               </div>

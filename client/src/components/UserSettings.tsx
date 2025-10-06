@@ -87,14 +87,14 @@ const UserSettings: React.FC<UserSettingsProps> = ({ user, onBack, onUserUpdate 
       });
 
       if (response.data.success) {
-        setSuccess(locale === 'ar' ? 'تم تحديث الملف الشخصي بنجاح' : 'Profile updated successfully');
+        setSuccess(t('profileUpdated'));
         onUserUpdate(response.data.data.user);
         // Update localStorage
         const updatedUser = { ...user, ...response.data.data.user };
         localStorage.setItem('user', JSON.stringify(updatedUser));
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || (locale === 'ar' ? 'فشل في تحديث الملف الشخصي' : 'Failed to update profile'));
+      setError(err.response?.data?.message || t('updateFailed'));
     } finally {
       setLoading(false);
     }
@@ -107,7 +107,7 @@ const UserSettings: React.FC<UserSettingsProps> = ({ user, onBack, onUserUpdate 
     setSuccess('');
 
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setError(locale === 'ar' ? 'كلمات المرور الجديدة غير متطابقة' : 'New passwords do not match');
+      setError(t('passwordsNotMatch'));
       setLoading(false);
       return;
     }
@@ -128,7 +128,7 @@ const UserSettings: React.FC<UserSettingsProps> = ({ user, onBack, onUserUpdate 
       });
 
       if (response.data.success) {
-        setSuccess(locale === 'ar' ? 'تم تغيير كلمة المرور بنجاح' : 'Password changed successfully');
+        setSuccess(t('passwordChanged'));
         setPasswordData({
           currentPassword: '',
           newPassword: '',
@@ -136,7 +136,7 @@ const UserSettings: React.FC<UserSettingsProps> = ({ user, onBack, onUserUpdate 
         });
       }
     } catch (err: any) {
-      setError(err.response?.data?.message || (locale === 'ar' ? 'فشل في تغيير كلمة المرور' : 'Failed to change password'));
+      setError(err.response?.data?.message || t('updateFailed'));
     } finally {
       setLoading(false);
     }
@@ -160,7 +160,7 @@ const UserSettings: React.FC<UserSettingsProps> = ({ user, onBack, onUserUpdate 
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                {locale === 'ar' ? 'إعدادات الحساب' : 'Account Settings'}
+                {t('accountSettings')}
               </h1>
               <p className="text-gray-600 dark:text-gray-300">
                 {locale === 'ar' 
@@ -177,7 +177,7 @@ const UserSettings: React.FC<UserSettingsProps> = ({ user, onBack, onUserUpdate 
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
-                {locale === 'ar' ? 'العودة' : 'Back'}
+                {t('back')}
               </span>
             </button>
           </div>
@@ -255,7 +255,7 @@ const UserSettings: React.FC<UserSettingsProps> = ({ user, onBack, onUserUpdate 
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-8">
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                {locale === 'ar' ? 'معلومات الملف الشخصي' : 'Profile Information'}
+                {t('profileInformation')}
               </h2>
               <p className="text-gray-600 dark:text-gray-300">
                 {locale === 'ar' ? 'قم بتحديث معلوماتك الشخصية' : 'Update your personal information'}
@@ -266,7 +266,7 @@ const UserSettings: React.FC<UserSettingsProps> = ({ user, onBack, onUserUpdate 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {locale === 'ar' ? 'الاسم الأول' : 'First Name'}
+                    {t('firstName')}
                   </label>
                   <input
                     type="text"
@@ -281,7 +281,7 @@ const UserSettings: React.FC<UserSettingsProps> = ({ user, onBack, onUserUpdate 
 
                 <div>
                   <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {locale === 'ar' ? 'اسم العائلة' : 'Last Name'}
+                    {t('lastName')}
                   </label>
                   <input
                     type="text"
@@ -296,7 +296,7 @@ const UserSettings: React.FC<UserSettingsProps> = ({ user, onBack, onUserUpdate 
 
                 <div>
                   <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {locale === 'ar' ? 'اسم المستخدم' : 'Username'}
+                    {t('username')}
                   </label>
                   <input
                     type="text"
@@ -311,7 +311,7 @@ const UserSettings: React.FC<UserSettingsProps> = ({ user, onBack, onUserUpdate 
 
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    {locale === 'ar' ? 'البريد الإلكتروني' : 'Email'}
+                    {t('email')}
                   </label>
                   <input
                     type="email"
@@ -327,23 +327,23 @@ const UserSettings: React.FC<UserSettingsProps> = ({ user, onBack, onUserUpdate 
 
               <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-4">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">
-                  {locale === 'ar' ? 'معلومات إضافية' : 'Additional Information'}
+                  {t('additionalInfo')}
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="font-medium text-gray-600 dark:text-gray-400">
-                      {locale === 'ar' ? 'الدور:' : 'Role:'}
+                      {t('role')}:
                     </span> {user.role}
                   </div>
                   <div>
                     <span className="font-medium text-gray-600 dark:text-gray-400">
-                      {locale === 'ar' ? 'تاريخ التسجيل:' : 'Registered:'}
+                      {t('registered')}:
                     </span> {formatDate(user.createdAt)}
                   </div>
                   {user.lastLogin && (
                     <div>
                       <span className="font-medium text-gray-600 dark:text-gray-400">
-                        {locale === 'ar' ? 'آخر دخول:' : 'Last Login:'}
+                        {t('lastLogin')}:
                       </span> {formatDate(user.lastLogin)}
                     </div>
                   )}
@@ -362,10 +362,10 @@ const UserSettings: React.FC<UserSettingsProps> = ({ user, onBack, onUserUpdate 
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      {locale === 'ar' ? 'جاري الحفظ...' : 'Saving...'}
+                      {t('saving')}
                     </span>
                   ) : (
-                    locale === 'ar' ? 'حفظ التغييرات' : 'Save Changes'
+                    t('save')
                   )}
                 </button>
               </div>
@@ -378,7 +378,7 @@ const UserSettings: React.FC<UserSettingsProps> = ({ user, onBack, onUserUpdate 
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-8">
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                {locale === 'ar' ? 'تغيير كلمة المرور' : 'Change Password'}
+                {t('changePassword')}
               </h2>
               <p className="text-gray-600 dark:text-gray-300">
                 {locale === 'ar' ? 'قم بتغيير كلمة المرور لحسابك' : 'Change your account password'}
@@ -388,7 +388,7 @@ const UserSettings: React.FC<UserSettingsProps> = ({ user, onBack, onUserUpdate 
             <form onSubmit={handlePasswordSubmit} className="space-y-6">
               <div>
                 <label htmlFor="currentPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {locale === 'ar' ? 'كلمة المرور الحالية' : 'Current Password'}
+                    {t('currentPassword')}
                 </label>
                 <div className="relative">
                   <input
@@ -418,7 +418,7 @@ const UserSettings: React.FC<UserSettingsProps> = ({ user, onBack, onUserUpdate 
 
               <div>
                 <label htmlFor="newPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {locale === 'ar' ? 'كلمة المرور الجديدة' : 'New Password'}
+                    {t('newPassword')}
                 </label>
                 <div className="relative">
                   <input
@@ -452,7 +452,7 @@ const UserSettings: React.FC<UserSettingsProps> = ({ user, onBack, onUserUpdate 
 
               <div>
                 <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  {locale === 'ar' ? 'تأكيد كلمة المرور الجديدة' : 'Confirm New Password'}
+                    {t('confirmPassword')}
                 </label>
                 <div className="relative">
                   <input
@@ -492,10 +492,10 @@ const UserSettings: React.FC<UserSettingsProps> = ({ user, onBack, onUserUpdate 
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      {locale === 'ar' ? 'جاري التغيير...' : 'Changing...'}
+                      {t('changing')}
                     </span>
                   ) : (
-                    locale === 'ar' ? 'تغيير كلمة المرور' : 'Change Password'
+                    t('changePassword')
                   )}
                 </button>
               </div>

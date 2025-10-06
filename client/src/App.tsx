@@ -10,7 +10,7 @@ import UserReports from './components/UserReports';
 import AdminDashboard from './components/AdminDashboard';
 import UserSettings from './components/UserSettings';
 import { ThemeProvider } from './contexts/ThemeContext';
-import { LocaleProvider } from './contexts/LocaleContext';
+import { LocaleProvider, useLocale } from './contexts/LocaleContext';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -33,7 +33,7 @@ interface User {
   role: string;
 }
 
-function App() {
+function AppContent() {
   const [currentReport, setCurrentReport] = useState<Report | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [showLogin, setShowLogin] = useState(false);
@@ -42,7 +42,7 @@ function App() {
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
   const [showUserSettings, setShowUserSettings] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [locale, setLocale] = useState<'ar' | 'en'>('ar');
+  const { t, locale } = useLocale();
 
   useEffect(() => {
     // Check if user is logged in
@@ -95,87 +95,67 @@ function App() {
 
   if (loading) {
     return (
-      <ThemeProvider>
-        <LocaleProvider>
-          <div className="min-h-screen flex items-center justify-center">
-            <div className="text-lg">جاري التحميل...</div>
-          </div>
-        </LocaleProvider>
-      </ThemeProvider>
+      <div className="min-h-screen flex items-center justify-center dark:bg-slate-900">
+        <div className="text-lg dark:text-white">{t('loading')}</div>
+      </div>
     );
   }
 
   if (showLogin) {
     return (
-      <ThemeProvider>
-        <LocaleProvider>
-          <Login
-            onLogin={handleLogin}
-            onSwitchToRegister={() => {
-              setShowLogin(false);
-              setShowRegister(true);
-            }}
-          />
-        </LocaleProvider>
-      </ThemeProvider>
+      <Login
+        onLogin={handleLogin}
+        onSwitchToRegister={() => {
+          setShowLogin(false);
+          setShowRegister(true);
+        }}
+      />
     );
   }
 
   if (showRegister) {
     return (
-      <ThemeProvider>
-        <LocaleProvider>
-          <Register
-            onRegister={handleRegister}
-            onSwitchToLogin={() => {
-              setShowRegister(false);
-              setShowLogin(true);
-            }}
-          />
-        </LocaleProvider>
-      </ThemeProvider>
+      <Register
+        onRegister={handleRegister}
+        onSwitchToLogin={() => {
+          setShowRegister(false);
+          setShowLogin(true);
+        }}
+      />
     );
   }
 
   if (showUserSettings && user) {
     return (
-      <ThemeProvider>
-        <LocaleProvider>
-          <Header user={user} onLogout={handleLogout} />
-          <UserSettings user={user} onBack={handleBackToMain} onUserUpdate={handleUserUpdate} />
-        </LocaleProvider>
-      </ThemeProvider>
+      <>
+        <Header user={user} onLogout={handleLogout} />
+        <UserSettings user={user} onBack={handleBackToMain} onUserUpdate={handleUserUpdate} />
+      </>
     );
   }
 
   if (showAdminDashboard && user && user.role === 'admin') {
     return (
-      <ThemeProvider>
-        <LocaleProvider>
-          <Header user={user} onLogout={handleLogout} />
-          <AdminDashboard user={user} onBack={handleBackToMain} />
-        </LocaleProvider>
-      </ThemeProvider>
+      <>
+        <Header user={user} onLogout={handleLogout} />
+        <AdminDashboard user={user} onBack={handleBackToMain} />
+      </>
     );
   }
 
   if (showUserReports && user) {
     return (
-      <ThemeProvider>
-        <LocaleProvider>
-          <Header user={user} onLogout={handleLogout} />
-          <UserReports user={user} onUploadNew={handleUploadNew} />
-        </LocaleProvider>
-      </ThemeProvider>
+      <>
+        <Header user={user} onLogout={handleLogout} />
+        <UserReports user={user} onUploadNew={handleUploadNew} />
+      </>
     );
   }
 
   if (!user) {
     return (
-      <ThemeProvider>
-        <LocaleProvider>
-          <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-slate-900 dark:via-slate-950 dark:to-black">
-            <Header user={user} onLogout={handleLogout} />
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-slate-900 dark:via-slate-950 dark:to-black">
+        <Header user={user} onLogout={handleLogout} />
         <div className="max-w-6xl mx-auto px-4 py-20">
           <div className="text-center">
             <div className="mb-8">
@@ -185,28 +165,40 @@ function App() {
                 </svg>
               </div>
               <h1 className="text-6xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 bg-clip-text text-transparent mb-6 animate-fade-in">
-                مولد التقارير الذكية
+                {t('welcome')}
               </h1>
-              <p className="text-2xl text-gray-700 mb-12 max-w-3xl mx-auto leading-relaxed">
-                🚀 حول بياناتك إلى رؤى ذكية مع الذكاء الاصطناعي المتقدم
+              <p className="text-2xl text-gray-700 dark:text-gray-300 mb-12 max-w-3xl mx-auto leading-relaxed">
+                🚀 {t('welcomeMessage')}
               </p>
             </div>
             
             <div className="grid md:grid-cols-3 gap-8 mb-12">
-              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
+              <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
                 <div className="text-4xl mb-4">📊</div>
-                <h3 className="text-xl font-bold text-gray-800 mb-3">تحليل متقدم</h3>
-                <p className="text-gray-600">تحليل ذكي للبيانات مع إحصائيات شاملة</p>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-3">
+                  {locale === 'ar' ? 'تحليل متقدم' : 'Advanced Analysis'}
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  {locale === 'ar' ? 'تحليل ذكي للبيانات مع إحصائيات شاملة' : 'Smart data analysis with comprehensive statistics'}
+                </p>
               </div>
-              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
+              <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
                 <div className="text-4xl mb-4">🤖</div>
-                <h3 className="text-xl font-bold text-gray-800 mb-3">ذكاء اصطناعي</h3>
-                <p className="text-gray-600">تقارير مبنية على أحدث تقنيات AI</p>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-3">
+                  {locale === 'ar' ? 'ذكاء اصطناعي' : 'Artificial Intelligence'}
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  {locale === 'ar' ? 'تقارير مبنية على أحدث تقنيات AI' : 'Reports built on the latest AI technologies'}
+                </p>
               </div>
-              <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
+              <div className="bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm rounded-2xl p-8 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
                 <div className="text-4xl mb-4">📈</div>
-                <h3 className="text-xl font-bold text-gray-800 mb-3">توصيات ذكية</h3>
-                <p className="text-gray-600">نصائح وإرشادات مبنية على البيانات</p>
+                <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-3">
+                  {locale === 'ar' ? 'توصيات ذكية' : 'Smart Recommendations'}
+                </h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  {locale === 'ar' ? 'نصائح وإرشادات مبنية على البيانات' : 'Data-driven tips and guidance'}
+                </p>
               </div>
             </div>
 
@@ -215,22 +207,20 @@ function App() {
                 onClick={() => setShowLogin(true)}
                 className="group relative px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl text-lg font-bold shadow-2xl hover:shadow-indigo-500/25 transition-all duration-300 hover:scale-105 hover:-translate-y-1"
               >
-                <span className="relative z-10">تسجيل الدخول</span>
+                <span className="relative z-10">{t('login')}</span>
                 <div className="absolute inset-0 bg-gradient-to-r from-indigo-700 to-purple-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </button>
               <button
                 onClick={() => setShowRegister(true)}
                 className="group relative px-8 py-4 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-2xl text-lg font-bold shadow-2xl hover:shadow-emerald-500/25 transition-all duration-300 hover:scale-105 hover:-translate-y-1"
               >
-                <span className="relative z-10">إنشاء حساب جديد</span>
+                <span className="relative z-10">{t('register')}</span>
                 <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </button>
             </div>
           </div>
         </div>
-          </div>
-      </LocaleProvider>
-      </ThemeProvider>
+      </div>
     );
   }
 
@@ -259,7 +249,7 @@ function App() {
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
-                {locale === 'ar' ? 'إنشاء تقرير جديد' : 'Create New Report'}
+                {t('createNewReport')}
               </span>
             </button>
             <button
@@ -278,7 +268,7 @@ function App() {
                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                {locale === 'ar' ? 'تقاريري' : 'My Reports'}
+                {t('myReports')}
               </span>
             </button>
 
@@ -299,7 +289,7 @@ function App() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                {locale === 'ar' ? 'الإعدادات' : 'Settings'}
+                {t('settings')}
               </span>
             </button>
             {user && user.role === 'admin' && (
@@ -319,7 +309,7 @@ function App() {
                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
                   </svg>
-                  {locale === 'ar' ? 'لوحة الإدارة' : 'Admin Panel'}
+                  {t('adminPanel')}
                 </span>
               </button>
             )}
@@ -470,6 +460,16 @@ function App() {
       console.error('Error downloading PDF:', error);
     }
   }
+}
+
+function App() {
+  return (
+    <ThemeProvider>
+      <LocaleProvider>
+        <AppContent />
+      </LocaleProvider>
+    </ThemeProvider>
+  );
 }
 
 export default App;
