@@ -7,6 +7,7 @@ import Login from './components/Login';
 import Register from './components/Register';
 import Header from './components/Header';
 import UserReports from './components/UserReports';
+import AdminDashboard from './components/AdminDashboard';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LocaleProvider } from './contexts/LocaleContext';
 
@@ -37,6 +38,7 @@ function App() {
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
   const [showUserReports, setShowUserReports] = useState(false);
+  const [showAdminDashboard, setShowAdminDashboard] = useState(false);
   const [loading, setLoading] = useState(true);
   const [locale, setLocale] = useState<'ar' | 'en'>('ar');
 
@@ -67,10 +69,18 @@ function App() {
     setUser(null);
     setCurrentReport(null);
     setShowUserReports(false);
+    setShowAdminDashboard(false);
   };
 
   const handleUploadNew = () => {
     setShowUserReports(false);
+    setShowAdminDashboard(false);
+    setCurrentReport(null);
+  };
+
+  const handleBackToMain = () => {
+    setShowUserReports(false);
+    setShowAdminDashboard(false);
     setCurrentReport(null);
   };
 
@@ -113,6 +123,17 @@ function App() {
               setShowLogin(true);
             }}
           />
+        </LocaleProvider>
+      </ThemeProvider>
+    );
+  }
+
+  if (showAdminDashboard && user && user.role === 'admin') {
+    return (
+      <ThemeProvider>
+        <LocaleProvider>
+          <Header user={user} onLogout={handleLogout} />
+          <AdminDashboard user={user} onBack={handleBackToMain} />
         </LocaleProvider>
       </ThemeProvider>
     );
@@ -204,9 +225,12 @@ function App() {
         <div className="mb-8">
           <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
             <button
-              onClick={() => setShowUserReports(false)}
+              onClick={() => {
+                setShowUserReports(false);
+                setShowAdminDashboard(false);
+              }}
               className={`flex-1 py-3 px-6 rounded-lg font-medium transition-all duration-200 ${
-                !showUserReports 
+                !showUserReports && !showAdminDashboard
                   ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' 
                   : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
               }`}
@@ -219,9 +243,12 @@ function App() {
               </span>
             </button>
             <button
-              onClick={() => setShowUserReports(true)}
+              onClick={() => {
+                setShowUserReports(true);
+                setShowAdminDashboard(false);
+              }}
               className={`flex-1 py-3 px-6 rounded-lg font-medium transition-all duration-200 ${
-                showUserReports 
+                showUserReports && !showAdminDashboard
                   ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' 
                   : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
               }`}
@@ -233,6 +260,26 @@ function App() {
                 {locale === 'ar' ? 'تقاريري' : 'My Reports'}
               </span>
             </button>
+            {user && user.role === 'admin' && (
+              <button
+                onClick={() => {
+                  setShowUserReports(false);
+                  setShowAdminDashboard(true);
+                }}
+                className={`flex-1 py-3 px-6 rounded-lg font-medium transition-all duration-200 ${
+                  showAdminDashboard
+                    ? 'bg-white dark:bg-slate-700 text-red-600 dark:text-red-400 shadow-sm' 
+                    : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                <span className="flex items-center justify-center">
+                  <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                  {locale === 'ar' ? 'لوحة الإدارة' : 'Admin Panel'}
+                </span>
+              </button>
+            )}
           </div>
         </div>
 

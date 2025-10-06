@@ -8,7 +8,8 @@ const {
   getAllReports, 
   getReport, 
   downloadReport, 
-  deleteReport 
+  deleteReport,
+  getAllReportsForAdmin
 } = require('../controllers/reportController');
 const { authenticate, optionalAuth } = require('../middleware/auth');
 
@@ -58,5 +59,8 @@ router.get('/:reportId/download', optionalAuth, downloadReport);
 
 // Delete report (optional authentication)
 router.delete('/:reportId', optionalAuth, deleteReport);
+
+// Admin route - Get all reports with user details
+router.get('/admin/all', authenticate, getAllReportsForAdmin);
 
 module.exports = router;

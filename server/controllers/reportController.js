@@ -246,11 +246,40 @@ const deleteReport = async (req, res) => {
   }
 };
 
+// Get all reports for admin with user details
+const getAllReportsForAdmin = async (req, res) => {
+  try {
+    // Check if user is admin
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Admin access required' 
+      });
+    }
+
+    const reports = await Report.find({})
+      .populate('userId', 'username email firstName lastName role createdAt lastLogin')
+      .sort({ createdAt: -1 });
+
+    res.json({ 
+      success: true, 
+      data: { reports: reports } 
+    });
+  } catch (error) {
+    console.error('Fetch all reports for admin error:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Failed to fetch all reports' 
+    });
+  }
+};
+
 module.exports = {
   uploadFile,
   generateAReport,
   getAllReports,
   getReport,
   downloadReport,
-  deleteReport
+  deleteReport,
+  getAllReportsForAdmin
 };
