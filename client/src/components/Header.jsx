@@ -1,8 +1,12 @@
 import React from 'react';
+import { useTheme } from '../contexts/ThemeContext';
+import { useLocale } from '../contexts/LocaleContext';
 
 const Header = ({ user, onLogout }) => {
+  const { theme, toggleTheme } = useTheme();
+  const { locale, toggleLocale, t } = useLocale();
   return (
-    <header className="bg-white/90 backdrop-blur-md shadow-xl border-b border-white/20 sticky top-0 z-50">
+    <header className="bg-white/90 backdrop-blur-md shadow-xl border-b border-white/20 sticky top-0 z-50 dark:bg-slate-900/60 dark:border-slate-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center py-4">
           <div className="flex items-center">
@@ -13,14 +17,23 @@ const Header = ({ user, onLogout }) => {
                 </svg>
               </div>
               <div>
-                <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
-                  AI Report Generator
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent dark:from-indigo-400 dark:to-purple-400">
+                  {locale === 'ar' ? 'مولد التقارير الذكية' : 'AI Report Generator'}
                 </h1>
-                <p className="text-xs text-gray-500">مولد التقارير الذكية</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400">{locale === 'ar' ? 'نظام إدارة التقارير الذكية' : 'Smart Reports System'}</p>
               </div>
             </div>
           </div>
-          
+          {/* Controls */}
+          <div className="flex items-center gap-2 mr-2">
+            <button onClick={toggleLocale} className="px-3 py-2 text-sm rounded-lg bg-gradient-to-r from-slate-100 to-white text-slate-700 hover:shadow dark:from-slate-800 dark:to-slate-900 dark:text-slate-200">
+              {locale === 'ar' ? 'EN' : 'AR'}
+            </button>
+            <button onClick={toggleTheme} aria-label="Toggle theme" className="px-3 py-2 text-sm rounded-lg bg-gradient-to-r from-slate-100 to-white text-slate-700 hover:shadow dark:from-slate-800 dark:to-slate-900 dark:text-slate-200">
+              {theme === 'dark' ? '☀️' : '🌙'}
+            </button>
+          </div>
+
           {user ? (
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-3 bg-gradient-to-r from-indigo-50 to-purple-50 px-4 py-2 rounded-full">
@@ -31,10 +44,10 @@ const Header = ({ user, onLogout }) => {
                 </div>
                 <div>
                   <div className="text-sm font-semibold text-gray-800">
-                    مرحباً، {user.firstName} {user.lastName}
+                    {locale === 'ar' ? 'مرحباً،' : 'Welcome,'} {user.firstName} {user.lastName}
                   </div>
                   <div className="text-xs text-gray-500 capitalize">
-                    {user.role === 'admin' ? 'مدير' : 'مستخدم'}
+                    {locale === 'ar' ? (user.role === 'admin' ? 'مدير' : 'مستخدم') : user.role}
                   </div>
                 </div>
               </div>
@@ -46,7 +59,7 @@ const Header = ({ user, onLogout }) => {
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                   </svg>
-                  <span>تسجيل الخروج</span>
+                  <span>{locale === 'ar' ? 'تسجيل الخروج' : 'Logout'}</span>
                 </span>
                 <div className="absolute inset-0 bg-gradient-to-r from-red-600 to-pink-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </button>
@@ -54,7 +67,7 @@ const Header = ({ user, onLogout }) => {
           ) : (
             <div className="flex items-center space-x-2 text-gray-600">
               <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium">نظام إدارة التقارير الذكية</span>
+              <span className="text-sm font-medium dark:text-slate-300">{locale === 'ar' ? 'نظام إدارة التقارير الذكية' : 'Smart Reports System'}</span>
             </div>
           )}
         </div>

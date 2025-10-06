@@ -6,6 +6,9 @@ import ReportDisplay from './components/ReportDisplay';
 import Login from './components/Login';
 import Register from './components/Register';
 import Header from './components/Header';
+import UserReports from './components/UserReports';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { LocaleProvider } from './contexts/LocaleContext';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -33,6 +36,7 @@ function App() {
   const [user, setUser] = useState<User | null>(null);
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
+  const [showUserReports, setShowUserReports] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -61,44 +65,75 @@ function App() {
     localStorage.removeItem('user');
     setUser(null);
     setCurrentReport(null);
+    setShowUserReports(false);
+  };
+
+  const handleUploadNew = () => {
+    setShowUserReports(false);
+    setCurrentReport(null);
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">جاري التحميل...</div>
-      </div>
+      <ThemeProvider>
+        <LocaleProvider>
+          <div className="min-h-screen flex items-center justify-center">
+            <div className="text-lg">جاري التحميل...</div>
+          </div>
+        </LocaleProvider>
+      </ThemeProvider>
     );
   }
 
   if (showLogin) {
     return (
-      <Login 
-        onLogin={handleLogin}
-        onSwitchToRegister={() => {
-          setShowLogin(false);
-          setShowRegister(true);
-        }}
-      />
+      <ThemeProvider>
+        <LocaleProvider>
+          <Login
+            onLogin={handleLogin}
+            onSwitchToRegister={() => {
+              setShowLogin(false);
+              setShowRegister(true);
+            }}
+          />
+        </LocaleProvider>
+      </ThemeProvider>
     );
   }
 
   if (showRegister) {
     return (
-      <Register 
-        onRegister={handleRegister}
-        onSwitchToLogin={() => {
-          setShowRegister(false);
-          setShowLogin(true);
-        }}
-      />
+      <ThemeProvider>
+        <LocaleProvider>
+          <Register
+            onRegister={handleRegister}
+            onSwitchToLogin={() => {
+              setShowRegister(false);
+              setShowLogin(true);
+            }}
+          />
+        </LocaleProvider>
+      </ThemeProvider>
+    );
+  }
+
+  if (showUserReports && user) {
+    return (
+      <ThemeProvider>
+        <LocaleProvider>
+          <Header user={user} onLogout={handleLogout} />
+          <UserReports user={user} onUploadNew={handleUploadNew} />
+        </LocaleProvider>
+      </ThemeProvider>
     );
   }
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-        <Header user={user} onLogout={handleLogout} />
+      <ThemeProvider>
+        <LocaleProvider>
+          <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-slate-900 dark:via-slate-950 dark:to-black">
+            <Header user={user} onLogout={handleLogout} />
         <div className="max-w-6xl mx-auto px-4 py-20">
           <div className="text-center">
             <div className="mb-8">
@@ -151,13 +186,17 @@ function App() {
             </div>
           </div>
         </div>
-      </div>
+          </div>
+      </LocaleProvider>
+      </ThemeProvider>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
-      <Header user={user} onLogout={handleLogout} />
+    <ThemeProvider>
+      <LocaleProvider>
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-950 dark:to-black">
+          <Header user={user} onLogout={handleLogout} />
       
       <main className="max-w-7xl mx-auto px-4 py-12">
         {/* Welcome Section */}
@@ -247,7 +286,9 @@ function App() {
           </div>
         </div>
       </main>
-    </div>
+        </div>
+      </LocaleProvider>
+    </ThemeProvider>
   );
 
   async function fetchReport(reportId: string) {
