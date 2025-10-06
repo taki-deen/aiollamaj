@@ -130,6 +130,13 @@ const translations: Record<Locale, Record<string, string>> = {
     deleting: 'جاري الحذف...',
     changing: 'جاري التغيير...',
     
+    // Additional UI Elements
+    createdOn: 'تم إنشاؤه في:',
+    noReportGenerated: 'لم يتم توليد تقرير بعد',
+    createdLabel: 'تم الإنشاء:',
+    generatedLabel: 'تم التوليد:',
+    welcomeComma: 'مرحباً،',
+    
     // Messages
     profileUpdated: 'تم تحديث الملف الشخصي بنجاح',
     passwordChanged: 'تم تغيير كلمة المرور بنجاح',
@@ -266,6 +273,13 @@ const translations: Record<Locale, Record<string, string>> = {
     updating: 'Updating...',
     deleting: 'Deleting...',
     changing: 'Changing...',
+    
+    // Additional UI Elements
+    createdOn: 'Created on:',
+    noReportGenerated: 'No report generated yet',
+    createdLabel: 'Created:',
+    generatedLabel: 'Generated:',
+    welcomeComma: 'Welcome,',
     
     // Messages
     profileUpdated: 'Profile updated successfully',

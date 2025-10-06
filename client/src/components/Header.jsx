@@ -18,9 +18,9 @@ const Header = ({ user, onLogout }) => {
               </div>
               <div>
                 <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent dark:from-indigo-400 dark:to-purple-400">
-                  {locale === 'ar' ? 'مولد التقارير الذكية' : 'AI Report Generator'}
+                  {t('welcome')}
                 </h1>
-                <p className="text-xs text-gray-500 dark:text-slate-400">{locale === 'ar' ? 'نظام إدارة التقارير الذكية' : 'Smart Reports System'}</p>
+                <p className="text-xs text-gray-500 dark:text-slate-400">{t('welcomeMessage')}</p>
               </div>
             </div>
           </div>
@@ -44,10 +44,10 @@ const Header = ({ user, onLogout }) => {
                 </div>
                 <div>
                   <div className="text-sm font-semibold text-gray-800">
-                    {locale === 'ar' ? 'مرحباً،' : 'Welcome,'} {user.firstName} {user.lastName}
+                    {t('welcomeComma')} {user.firstName} {user.lastName}
                   </div>
                   <div className="text-xs text-gray-500 capitalize">
-                    {locale === 'ar' ? (user.role === 'admin' ? 'مدير' : 'مستخدم') : user.role}
+                    {user.role === 'admin' ? t('admin') : t('user')}
                   </div>
                 </div>
               </div>
@@ -59,7 +59,7 @@ const Header = ({ user, onLogout }) => {
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                   </svg>
-                  <span>{locale === 'ar' ? 'تسجيل الخروج' : 'Logout'}</span>
+                  <span>{t('logout')}</span>
                 </span>
                 <div className="absolute inset-0 bg-gradient-to-r from-red-600 to-pink-600 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
               </button>
@@ -67,7 +67,7 @@ const Header = ({ user, onLogout }) => {
           ) : (
             <div className="flex items-center space-x-2 text-gray-600">
               <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-              <span className="text-sm font-medium dark:text-slate-300">{locale === 'ar' ? 'نظام إدارة التقارير الذكية' : 'Smart Reports System'}</span>
+              <span className="text-sm font-medium dark:text-slate-300">{t('welcomeMessage')}</span>
             </div>
           )}
         </div>

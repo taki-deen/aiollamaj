@@ -329,7 +329,7 @@ function AppContent() {
             {locale === 'ar' ? `مرحباً ${user.firstName}! 👋` : `Welcome ${user.firstName}! 👋`}
           </h2>
           <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-            {locale === 'ar' ? 'ابدأ بتحليل بياناتك وإنشاء تقارير ذكية في دقائق' : 'Start analyzing your data and creating smart reports in minutes'}
+            {t('welcomeMessage')}
           </p>
         </div>
 
