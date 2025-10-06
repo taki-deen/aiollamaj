@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLocale } from '../contexts/LocaleContext';
+import UserManagement from './UserManagement';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -40,6 +41,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState<'reports' | 'users'>('reports');
   const { theme } = useTheme();
   const { locale, t } = useLocale();
 
@@ -178,6 +180,46 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
           </div>
         </div>
 
+        {/* Tabs */}
+        <div className="mb-8">
+          <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
+            <button
+              onClick={() => setActiveTab('reports')}
+              className={`flex-1 py-3 px-6 rounded-lg font-medium transition-all duration-200 ${
+                activeTab === 'reports'
+                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' 
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              <span className="flex items-center justify-center">
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                {locale === 'ar' ? 'التقارير' : 'Reports'}
+              </span>
+            </button>
+            <button
+              onClick={() => setActiveTab('users')}
+              className={`flex-1 py-3 px-6 rounded-lg font-medium transition-all duration-200 ${
+                activeTab === 'users'
+                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' 
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              <span className="flex items-center justify-center">
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                </svg>
+                {locale === 'ar' ? 'المستخدمين' : 'Users'}
+              </span>
+            </button>
+          </div>
+        </div>
+
+        {activeTab === 'users' ? (
+          <UserManagement user={user} onBack={onBack} />
+        ) : (
+        <>
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-6 gap-6 mb-8">
           <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-lg">
@@ -498,6 +540,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
               </div>
             </div>
           </div>
+        )}
+        </>
         )}
       </div>
     </div>
