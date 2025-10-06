@@ -40,19 +40,30 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await axios.post(`${API_BASE}/upload`, formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+      const token = localStorage.getItem('token');
+      const headers: any = {
+        'Content-Type': 'multipart/form-data',
+      };
+
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await axios.post(`${API_BASE}/reports/upload`, formData, {
+        headers,
       });
 
-      onUploadSuccess(response.data.reportId);
-      setFile(null);
-      
-      const fileInput = document.getElementById('fileInput') as HTMLInputElement;
-      if (fileInput) fileInput.value = '';
-    } catch (error) {
-      setError('Upload failed. Please try again.');
+      if (response.data.success) {
+        onUploadSuccess(response.data.data.reportId);
+        setFile(null);
+        
+        const fileInput = document.getElementById('fileInput') as HTMLInputElement;
+        if (fileInput) fileInput.value = '';
+      } else {
+        setError(response.data.message || 'Upload failed');
+      }
+    } catch (error: any) {
+      setError(error.response?.data?.message || 'Upload failed. Please try again.');
       console.error('Upload error:', error);
     } finally {
       setUploading(false);

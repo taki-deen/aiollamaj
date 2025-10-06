@@ -23,13 +23,26 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ reportId, onReportGen
     setError('');
 
     try {
-      const response = await axios.post(`${API_BASE}/generate-report/${reportId}`, {
-        prompt: prompt.trim()
-      });
+      const token = localStorage.getItem('token');
+      const headers: any = {
+        'Content-Type': 'application/json',
+      };
 
-      onReportGenerated(response.data.report);
-    } catch (error) {
-      setError('Report generation failed. Please try again.');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await axios.post(`${API_BASE}/reports/generate/${reportId}`, {
+        prompt: prompt.trim()
+      }, { headers });
+
+      if (response.data.success) {
+        onReportGenerated(response.data.data.report);
+      } else {
+        setError(response.data.message || 'Report generation failed');
+      }
+    } catch (error: any) {
+      setError(error.response?.data?.message || 'Report generation failed. Please try again.');
       console.error('Generation error:', error);
     } finally {
       setGenerating(false);

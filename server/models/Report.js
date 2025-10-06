@@ -24,6 +24,15 @@ const reportSchema = new mongoose.Schema({
     enum: ['pending', 'processing', 'completed', 'error'],
     default: 'pending'
   },
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null
+  },
+  isPublic: {
+    type: Boolean,
+    default: false
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -32,5 +41,9 @@ const reportSchema = new mongoose.Schema({
     type: Date
   }
 });
+
+// Index for better query performance
+reportSchema.index({ userId: 1, createdAt: -1 });
+reportSchema.index({ status: 1 });
 
 module.exports = mongoose.model('Report', reportSchema);

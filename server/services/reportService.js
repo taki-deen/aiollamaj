@@ -45,6 +45,12 @@ const parseCSV = (csvContent) => {
 
 const generateReport = async (data, prompt) => {
   try {
+    // Check if API key is properly configured
+    if (!process.env.HF_TOKEN || process.env.HF_TOKEN === 'your_huggingface_token_here') {
+      console.log('No valid API key found, using fallback analysis...');
+      return generateFallbackReport(data, prompt);
+    }
+
     const dataString = JSON.stringify(data, null, 2);
     const fullPrompt = `Based on the following data: ${dataString}\n\nPlease analyze this data and ${prompt}. Provide insights, patterns, and recommendations.`;
 
@@ -80,11 +86,14 @@ const generateReport = async (data, prompt) => {
     console.error('AI generation error:', error);
     
     // Fallback to a simple analysis if API fails
-    if (error.response?.status === 503 || error.response?.status === 429) {
+    if (error.response?.status === 503 || error.response?.status === 429 || error.response?.status === 401) {
+      console.log('API error, using fallback analysis...');
       return generateFallbackReport(data, prompt);
     }
     
-    throw new Error('Failed to generate AI report');
+    // Always fallback on any error
+    console.log('Using fallback analysis due to error...');
+    return generateFallbackReport(data, prompt);
   }
 };
 
@@ -93,40 +102,127 @@ const generateFallbackReport = (data, prompt) => {
   const dataLength = data.length;
   const columns = data.length > 0 ? Object.keys(data[0]) : [];
   
-  return `
-# Data Analysis Report
-
-## Summary
-- Total records: ${dataLength}
-- Columns: ${columns.join(', ')}
-- Analysis request: ${prompt}
-
-## Basic Statistics
-${columns.map(col => {
-  const values = data.map(row => row[col]).filter(val => val !== '');
-  const numericValues = values.filter(val => !isNaN(parseFloat(val)));
-  
-  if (numericValues.length > 0) {
-    const sum = numericValues.reduce((a, b) => a + parseFloat(b), 0);
-    const avg = sum / numericValues.length;
-    const min = Math.min(...numericValues);
-    const max = Math.max(...numericValues);
+  // Calculate detailed statistics
+  const statistics = columns.map(col => {
+    const values = data.map(row => row[col]).filter(val => val !== '');
+    const numericValues = values.filter(val => !isNaN(parseFloat(val)));
     
-    return `- ${col}: Average ${avg.toFixed(2)}, Min ${min}, Max ${max}`;
-  } else {
-    const uniqueValues = [...new Set(values)];
-    return `- ${col}: ${uniqueValues.length} unique values`;
+    if (numericValues.length > 0) {
+      const sum = numericValues.reduce((a, b) => a + parseFloat(b), 0);
+      const avg = sum / numericValues.length;
+      const min = Math.min(...numericValues);
+      const max = Math.max(...numericValues);
+      const sorted = numericValues.sort((a, b) => a - b);
+      const median = sorted.length % 2 === 0 
+        ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
+        : sorted[Math.floor(sorted.length / 2)];
+      
+      return {
+        column: col,
+        type: 'numeric',
+        count: numericValues.length,
+        average: avg.toFixed(2),
+        median: median.toFixed(2),
+        min: min,
+        max: max,
+        range: (max - min).toFixed(2)
+      };
+    } else {
+      const uniqueValues = [...new Set(values)];
+      const valueCounts = {};
+      values.forEach(val => valueCounts[val] = (valueCounts[val] || 0) + 1);
+      const mostCommon = Object.keys(valueCounts).reduce((a, b) => valueCounts[a] > valueCounts[b] ? a : b);
+      
+      return {
+        column: col,
+        type: 'text',
+        count: values.length,
+        unique: uniqueValues.length,
+        mostCommon: mostCommon,
+        frequency: valueCounts[mostCommon]
+      };
+    }
+  });
+
+  // Generate insights based on data
+  const numericColumns = statistics.filter(s => s.type === 'numeric');
+  const textColumns = statistics.filter(s => s.type === 'text');
+  
+  let insights = [];
+  
+  if (numericColumns.length > 0) {
+    insights.push(`📊 **Numeric Analysis**: Found ${numericColumns.length} numeric columns with detailed statistics`);
+    
+    numericColumns.forEach(stat => {
+      if (parseFloat(stat.range) > 0) {
+        insights.push(`- **${stat.column}**: Range ${stat.range} (${stat.min} to ${stat.max}), Average: ${stat.average}`);
+      }
+    });
   }
-}).join('\n')}
+  
+  if (textColumns.length > 0) {
+    insights.push(`📝 **Text Analysis**: Found ${textColumns.length} text columns with categorization`);
+    
+    textColumns.forEach(stat => {
+      insights.push(`- **${stat.column}**: ${stat.unique} unique values, most common: "${stat.mostCommon}" (${stat.frequency} times)`);
+    });
+  }
+  
+  // Data quality insights
+  const missingData = columns.map(col => {
+    const missing = data.filter(row => !row[col] || row[col] === '').length;
+    return { column: col, missing: missing, percentage: ((missing / dataLength) * 100).toFixed(1) };
+  }).filter(item => item.missing > 0);
+  
+  if (missingData.length > 0) {
+    insights.push(`⚠️ **Data Quality**: Found missing values in ${missingData.length} columns`);
+    missingData.forEach(item => {
+      insights.push(`- **${item.column}**: ${item.missing} missing values (${item.percentage}%)`);
+    });
+  }
+  
+  return `
+# 📈 Data Analysis Report
 
-## Recommendations
-Based on the data structure, consider:
-1. Data validation for missing values
-2. Statistical analysis for numeric columns
-3. Categorization for text columns
-4. Data visualization for better insights
+## 📋 Summary
+- **Total Records**: ${dataLength}
+- **Columns**: ${columns.join(', ')}
+- **Analysis Request**: ${prompt}
+- **Report Type**: Statistical Analysis (AI API not available)
 
-*Note: This is a basic analysis. For advanced AI insights, please check API availability.*
+## 📊 Detailed Statistics
+
+${statistics.map(stat => {
+  if (stat.type === 'numeric') {
+    return `### ${stat.column} (Numeric)
+- **Count**: ${stat.count} values
+- **Average**: ${stat.average}
+- **Median**: ${stat.median}
+- **Range**: ${stat.min} to ${stat.max} (${stat.range})
+- **Data Quality**: ${stat.count === dataLength ? 'Complete' : `${dataLength - stat.count} missing values`}`;
+  } else {
+    return `### ${stat.column} (Text)
+- **Count**: ${stat.count} values
+- **Unique Values**: ${stat.unique}
+- **Most Common**: "${stat.mostCommon}" (${stat.frequency} times)
+- **Data Quality**: ${stat.count === dataLength ? 'Complete' : `${dataLength - stat.count} missing values`}`;
+  }
+}).join('\n\n')}
+
+## 🔍 Key Insights
+
+${insights.map(insight => `- ${insight}`).join('\n')}
+
+## 💡 Recommendations
+
+1. **Data Validation**: ${missingData.length > 0 ? 'Address missing values in the identified columns' : 'Data appears complete - good quality!'}
+2. **Statistical Analysis**: ${numericColumns.length > 0 ? 'Consider correlation analysis between numeric variables' : 'No numeric data for statistical analysis'}
+3. **Categorization**: ${textColumns.length > 0 ? 'Group similar text values for better insights' : 'No text data for categorization'}
+4. **Visualization**: Create charts and graphs to visualize patterns
+5. **Advanced Analysis**: ${numericColumns.length >= 2 ? 'Consider regression analysis for relationships' : 'Need more numeric variables for advanced analysis'}
+
+---
+*Note: This is an automated statistical analysis. For advanced AI-powered insights, please configure a valid API key in the environment variables.*
   `;
 };
 
