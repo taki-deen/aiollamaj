@@ -3,10 +3,10 @@ const fs = require('fs-extra');
 const axios = require('axios');
 const PDFDocument = require('pdfkit');
 
+// ===== File Processing =====
 const processFile = async (filePath) => {
   try {
     const fileExtension = filePath.split('.').pop().toLowerCase();
-    
     if (fileExtension === 'csv') {
       const csvContent = await fs.readFile(filePath, 'utf-8');
       return parseCSV(csvContent);
@@ -25,244 +25,237 @@ const processFile = async (filePath) => {
 };
 
 const parseCSV = (csvContent) => {
-  const lines = csvContent.split('\n');
-  const headers = lines[0].split(',').map(header => header.trim());
+  const lines = csvContent.split('\n').filter(line => line.trim() !== '');
+  if (lines.length === 0) return [];
+  
+  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
   const data = [];
-
+  
   for (let i = 1; i < lines.length; i++) {
     if (lines[i].trim()) {
-      const values = lines[i].split(',').map(value => value.trim());
+      const values = lines[i].split(',').map(v => v.trim().replace(/^"|"$/g, ''));
       const row = {};
-      headers.forEach((header, index) => {
-        row[header] = values[index] || '';
-      });
+      headers.forEach((h, idx) => row[h] = values[idx] || '');
       data.push(row);
     }
   }
-
   return data;
 };
 
+// ===== Gemini Analysis - الحل النهائي =====
 const generateReport = async (data, prompt) => {
   try {
-    // Check if API key is properly configured
-    if (!process.env.HF_TOKEN || process.env.HF_TOKEN === 'your_huggingface_token_here') {
-      console.log('No valid API key found, using fallback analysis...');
+    if (!process.env.GEMINI_API_KEY) {
+      console.log('No valid Gemini API key found, using fallback analysis...');
       return generateFallbackReport(data, prompt);
     }
 
-    const dataString = JSON.stringify(data, null, 2);
-    const fullPrompt = `Based on the following data: ${dataString}\n\nPlease analyze this data and ${prompt}. Provide insights, patterns, and recommendations.`;
+    // تحديد كمية البيانات لتجنب تجاوز الحدود
+    const sampleData = data.slice(0, 50);
+    const dataString = JSON.stringify(sampleData, null, 2);
+    
+    const fullPrompt = `Based on the following data: ${dataString}\n\nPlease analyze this data and ${prompt}. Provide insights, patterns, and recommendations in Arabic.`;
 
-    // Using Hugging Face Router API with Kimi model (Better performance)
+    // الحل: استخدام النموذج الصحيح - gemini-1.0-pro
     const response = await axios.post(
-      'https://router.huggingface.co/v1/chat/completions',
+      `https://generativelanguage.googleapis.com/v1/models/gemini-1.0-pro:generateContent?key=${process.env.GEMINI_API_KEY}`,
       {
-        model: 'moonshotai/Kimi-K2-Instruct-0905',
-        messages: [
+        contents: [
           {
-            role: 'user',
-            content: fullPrompt
+            parts: [
+              {
+                text: fullPrompt
+              }
+            ]
           }
         ],
-        temperature: 0.7,
-        max_tokens: 2000
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 1000,
+          topP: 0.8,
+          topK: 40
+        }
       },
       {
         headers: {
-          'Authorization': `Bearer ${process.env.HF_TOKEN}`,
           'Content-Type': 'application/json'
-        }
+        },
+        timeout: 30000
       }
     );
 
-    // Extract the generated text from Hugging Face Router response
-    if (response.data && response.data.choices && response.data.choices[0] && response.data.choices[0].message) {
-      return response.data.choices[0].message.content;
+    // استخراج النص بالطريقة الصحيحة
+    if (response.data && response.data.candidates && response.data.candidates[0]) {
+      return response.data.candidates[0].content.parts[0].text;
     } else {
-      throw new Error('Invalid response from AI service');
-    }
-  } catch (error) {
-    console.error('AI generation error:', error);
-    
-    // Fallback to a simple analysis if API fails
-    if (error.response?.status === 503 || error.response?.status === 429 || error.response?.status === 401) {
-      console.log('API error, using fallback analysis...');
+      console.log('Unexpected response format:', JSON.stringify(response.data, null, 2));
       return generateFallbackReport(data, prompt);
     }
+
+  } catch (error) {
+    console.error('Gemini API error details:', {
+      message: error.message,
+      status: error.response?.status,
+      data: error.response?.data
+    });
     
-    // Always fallback on any error
-    console.log('Using fallback analysis due to error...');
+    // إذا فشل gemini-1.0-pro، جرب gemini-pro
+    if (error.response?.status === 404) {
+      console.log('Trying gemini-pro as fallback...');
+      return generateReportWithGeminiPro(data, prompt);
+    }
+    
     return generateFallbackReport(data, prompt);
   }
 };
 
-// Fallback function when AI API is unavailable
+// ===== بديل إذا فشل النموذج الأول =====
+const generateReportWithGeminiPro = async (data, prompt) => {
+  try {
+    const sampleData = data.slice(0, 50);
+    const dataString = JSON.stringify(sampleData, null, 2);
+    
+    const fullPrompt = `Based on the following data: ${dataString}\n\nPlease analyze this data and ${prompt}. Provide insights, patterns, and recommendations in Arabic.`;
+
+    const response = await axios.post(
+      `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      {
+        contents: [
+          {
+            parts: [
+              {
+                text: fullPrompt
+              }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.7,
+          maxOutputTokens: 1000,
+        }
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        timeout: 30000
+      }
+    );
+
+    if (response.data && response.data.candidates && response.data.candidates[0]) {
+      return response.data.candidates[0].content.parts[0].text;
+    } else {
+      return generateFallbackReport(data, prompt);
+    }
+
+  } catch (error) {
+    console.error('Gemini Pro API error:', error.message);
+    return generateFallbackReport(data, prompt);
+  }
+};
+
+// ===== Fallback Report =====
 const generateFallbackReport = (data, prompt) => {
   const dataLength = data.length;
   const columns = data.length > 0 ? Object.keys(data[0]) : [];
-  
-  // Calculate detailed statistics
+
   const statistics = columns.map(col => {
-    const values = data.map(row => row[col]).filter(val => val !== '');
-    const numericValues = values.filter(val => !isNaN(parseFloat(val)));
-    
+    const values = data.map(row => row[col]).filter(v => v != null && v !== '');
+    const numericValues = values.map(v => parseFloat(v)).filter(v => !isNaN(v));
+
     if (numericValues.length > 0) {
-      const sum = numericValues.reduce((a, b) => a + parseFloat(b), 0);
-      const avg = sum / numericValues.length;
+      const sum = numericValues.reduce((a,b)=>a+b,0);
+      const avg = sum/numericValues.length;
       const min = Math.min(...numericValues);
       const max = Math.max(...numericValues);
-      const sorted = numericValues.sort((a, b) => a - b);
-      const median = sorted.length % 2 === 0 
-        ? (sorted[sorted.length / 2 - 1] + sorted[sorted.length / 2]) / 2
-        : sorted[Math.floor(sorted.length / 2)];
-      
-      return {
-        column: col,
-        type: 'numeric',
-        count: numericValues.length,
-        average: avg.toFixed(2),
-        median: median.toFixed(2),
-        min: min,
-        max: max,
-        range: (max - min).toFixed(2)
+      const sorted = numericValues.slice().sort((a,b)=>a-b);
+      const mid = Math.floor(sorted.length/2);
+      const median = sorted.length%2===0 ? (sorted[mid-1]+sorted[mid])/2 : sorted[mid];
+      return { 
+        column: col, 
+        type: 'numeric', 
+        count: numericValues.length, 
+        average: avg.toFixed(2), 
+        median: median.toFixed(2), 
+        min, 
+        max, 
+        range: (max-min).toFixed(2) 
       };
     } else {
       const uniqueValues = [...new Set(values)];
       const valueCounts = {};
-      values.forEach(val => valueCounts[val] = (valueCounts[val] || 0) + 1);
-      const mostCommon = Object.keys(valueCounts).reduce((a, b) => valueCounts[a] > valueCounts[b] ? a : b);
-      
-      return {
-        column: col,
-        type: 'text',
-        count: values.length,
-        unique: uniqueValues.length,
-        mostCommon: mostCommon,
-        frequency: valueCounts[mostCommon]
+      values.forEach(v=>valueCounts[v]=(valueCounts[v]||0)+1);
+      const mostCommon = Object.keys(valueCounts).reduce((a,b)=>valueCounts[a]>valueCounts[b]?a:b);
+      return { 
+        column: col, 
+        type: 'text', 
+        count: values.length, 
+        unique: uniqueValues.length, 
+        mostCommon, 
+        frequency: valueCounts[mostCommon] 
       };
     }
   });
 
-  // Generate insights based on data
-  const numericColumns = statistics.filter(s => s.type === 'numeric');
-  const textColumns = statistics.filter(s => s.type === 'text');
-  
+  const numericColumns = statistics.filter(s=>s.type==='numeric');
+  const textColumns = statistics.filter(s=>s.type==='text');
+
   let insights = [];
-  
-  if (numericColumns.length > 0) {
-    insights.push(`📊 **Numeric Analysis**: Found ${numericColumns.length} numeric columns with detailed statistics`);
-    
-    numericColumns.forEach(stat => {
-      if (parseFloat(stat.range) > 0) {
-        insights.push(`- **${stat.column}**: Range ${stat.range} (${stat.min} to ${stat.max}), Average: ${stat.average}`);
-      }
-    });
-  }
-  
-  if (textColumns.length > 0) {
-    insights.push(`📝 **Text Analysis**: Found ${textColumns.length} text columns with categorization`);
-    
-    textColumns.forEach(stat => {
-      insights.push(`- **${stat.column}**: ${stat.unique} unique values, most common: "${stat.mostCommon}" (${stat.frequency} times)`);
-    });
-  }
-  
-  // Data quality insights
-  const missingData = columns.map(col => {
-    const missing = data.filter(row => !row[col] || row[col] === '').length;
-    return { column: col, missing: missing, percentage: ((missing / dataLength) * 100).toFixed(1) };
-  }).filter(item => item.missing > 0);
-  
-  if (missingData.length > 0) {
-    insights.push(`⚠️ **Data Quality**: Found missing values in ${missingData.length} columns`);
-    missingData.forEach(item => {
-      insights.push(`- **${item.column}**: ${item.missing} missing values (${item.percentage}%)`);
-    });
-  }
-  
+  if(numericColumns.length>0) insights.push(`📊 الأعمدة الرقمية: ${numericColumns.length}`);
+  if(textColumns.length>0) insights.push(`📝 الأعمدة النصية: ${textColumns.length}`);
+  if(dataLength > 0) insights.push(`📋 إجمالي السجلات: ${dataLength}`);
+
   return `
-# 📈 Data Analysis Report
+# تقرير تحليل البيانات
+- إجمالي السجلات: ${dataLength}
+- الأعمدة: ${columns.join(', ')}
+- طلب التحليل: ${prompt}
 
-## 📋 Summary
-- **Total Records**: ${dataLength}
-- **Columns**: ${columns.join(', ')}
-- **Analysis Request**: ${prompt}
-- **Report Type**: Statistical Analysis (AI API not available)
-
-## 📊 Detailed Statistics
-
-${statistics.map(stat => {
-  if (stat.type === 'numeric') {
-    return `### ${stat.column} (Numeric)
-- **Count**: ${stat.count} values
-- **Average**: ${stat.average}
-- **Median**: ${stat.median}
-- **Range**: ${stat.min} to ${stat.max} (${stat.range})
-- **Data Quality**: ${stat.count === dataLength ? 'Complete' : `${dataLength - stat.count} missing values`}`;
+## الإحصائيات
+${statistics.map(stat=>{
+  if(stat.type==='numeric'){
+    return `### ${stat.column} (رقمي)
+- العدد: ${stat.count}
+- المتوسط: ${stat.average}
+- الوسيط: ${stat.median}
+- المدى: من ${stat.min} إلى ${stat.max}`;
   } else {
-    return `### ${stat.column} (Text)
-- **Count**: ${stat.count} values
-- **Unique Values**: ${stat.unique}
-- **Most Common**: "${stat.mostCommon}" (${stat.frequency} times)
-- **Data Quality**: ${stat.count === dataLength ? 'Complete' : `${dataLength - stat.count} missing values`}`;
+    return `### ${stat.column} (نصي)
+- العدد: ${stat.count}
+- القيم الفريدة: ${stat.unique}
+- الأكثر تكراراً: "${stat.mostCommon}" (${stat.frequency} مرة)`;
   }
 }).join('\n\n')}
 
-## 🔍 Key Insights
+## الملاحظات
+${insights.map(i=>`- ${i}`).join('\n')}
 
-${insights.map(insight => `- ${insight}`).join('\n')}
-
-## 💡 Recommendations
-
-1. **Data Validation**: ${missingData.length > 0 ? 'Address missing values in the identified columns' : 'Data appears complete - good quality!'}
-2. **Statistical Analysis**: ${numericColumns.length > 0 ? 'Consider correlation analysis between numeric variables' : 'No numeric data for statistical analysis'}
-3. **Categorization**: ${textColumns.length > 0 ? 'Group similar text values for better insights' : 'No text data for categorization'}
-4. **Visualization**: Create charts and graphs to visualize patterns
-5. **Advanced Analysis**: ${numericColumns.length >= 2 ? 'Consider regression analysis for relationships' : 'Need more numeric variables for advanced analysis'}
-
----
-*Note: This is an automated statistical analysis. For advanced AI-powered insights, please configure a valid API key in the environment variables.*
-  `;
+*ملاحظة: تم استخدام التحليل البديل بسبب عدم توفر مفتاح Gemini API أو وجود خطأ فيه.*
+`;
 };
 
+// ===== Generate PDF =====
 const generatePDF = async (report) => {
-  return new Promise((resolve, reject) => {
-    try {
+  return new Promise((resolve,reject)=>{
+    try{
       const doc = new PDFDocument();
       const chunks = [];
+      doc.on('data',chunk=>chunks.push(chunk));
+      doc.on('end',()=>resolve(Buffer.concat(chunks)));
+      doc.on('error',reject);
 
-      doc.on('data', chunk => chunks.push(chunk));
-      doc.on('end', () => resolve(Buffer.concat(chunks)));
-      doc.on('error', reject);
-
-      doc.fontSize(20).text('AI Generated Report', { align: 'center' });
+      doc.fontSize(20).text('التقرير المُولد بالذكاء الاصطناعي',{align:'center'});
       doc.moveDown();
-      
-      doc.fontSize(16).text(`File: ${report.filename}`, { underline: true });
-      doc.moveDown();
-      
-      if (report.prompt) {
-        doc.fontSize(14).text('Prompt:', { underline: true });
+      if(report.prompt){
+        doc.fontSize(14).text('الطلب:',{underline:true});
         doc.fontSize(12).text(report.prompt);
         doc.moveDown();
       }
-
-      doc.fontSize(14).text('Analysis:', { underline: true });
-      doc.fontSize(12).text(report.generatedReport, {
-        width: 500,
-        align: 'justify'
-      });
-
+      doc.fontSize(14).text('التحليل:',{underline:true});
+      doc.fontSize(12).text(report.generatedReport||'لا يتوفر تحليل',{width:500,align:'right'});
       doc.end();
-    } catch (error) {
-      reject(error);
-    }
+    }catch(err){ reject(err); }
   });
 };
 
-module.exports = {
-  processFile,
-  generateReport,
-  generatePDF
-};
+module.exports = { processFile, generateReport, generatePDF };

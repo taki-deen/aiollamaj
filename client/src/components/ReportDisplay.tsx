@@ -19,7 +19,7 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ report, onDownloadPDF }) 
         <div>
           <h3 className="text-xl font-bold text-gray-800 mb-1">التقرير المولد</h3>
           <p className="text-sm text-gray-500">
-            تم إنشاؤه في: {new Date(report.generatedAt || report.createdAt).toLocaleDateString('ar-SA')}
+            تم إنشاؤه في: {new Date(report.generatedAt || report.createdAt).toLocaleDateString('en-US')}
           </p>
         </div>
         <button
@@ -78,14 +78,14 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ report, onDownloadPDF }) 
             <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-            <span>تم الإنشاء: {new Date(report.createdAt).toLocaleDateString('ar-SA')}</span>
+            <span>تم الإنشاء: {new Date(report.createdAt).toLocaleDateString('en-US')}</span>
           </div>
           {report.generatedAt && (
             <div className="flex items-center">
               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
               </svg>
-              <span>تم التوليد: {new Date(report.generatedAt).toLocaleDateString('ar-SA')}</span>
+              <span>تم التوليد: {new Date(report.generatedAt).toLocaleDateString('en-US')}</span>
             </div>
           )}
         </div>
