@@ -38,6 +38,7 @@ function App() {
   const [showRegister, setShowRegister] = useState(false);
   const [showUserReports, setShowUserReports] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [locale, setLocale] = useState<'ar' | 'en'>('ar');
 
   useEffect(() => {
     // Check if user is logged in
@@ -199,6 +200,42 @@ function App() {
           <Header user={user} onLogout={handleLogout} />
       
       <main className="max-w-7xl mx-auto px-4 py-12">
+        {/* Navigation Tabs */}
+        <div className="mb-8">
+          <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
+            <button
+              onClick={() => setShowUserReports(false)}
+              className={`flex-1 py-3 px-6 rounded-lg font-medium transition-all duration-200 ${
+                !showUserReports 
+                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' 
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              <span className="flex items-center justify-center">
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                </svg>
+                {locale === 'ar' ? 'إنشاء تقرير جديد' : 'Create New Report'}
+              </span>
+            </button>
+            <button
+              onClick={() => setShowUserReports(true)}
+              className={`flex-1 py-3 px-6 rounded-lg font-medium transition-all duration-200 ${
+                showUserReports 
+                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' 
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              <span className="flex items-center justify-center">
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                {locale === 'ar' ? 'تقاريري' : 'My Reports'}
+              </span>
+            </button>
+          </div>
+        </div>
+
         {/* Welcome Section */}
         <div className="mb-12 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full mb-4">
@@ -206,14 +243,17 @@ function App() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
           </div>
-          <h2 className="text-4xl font-bold text-gray-800 mb-4">
-            مرحباً {user.firstName}! 👋
+          <h2 className="text-4xl font-bold text-gray-800 dark:text-white mb-4">
+            {locale === 'ar' ? `مرحباً ${user.firstName}! 👋` : `Welcome ${user.firstName}! 👋`}
           </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            ابدأ بتحليل بياناتك وإنشاء تقارير ذكية في دقائق
+          <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+            {locale === 'ar' ? 'ابدأ بتحليل بياناتك وإنشاء تقارير ذكية في دقائق' : 'Start analyzing your data and creating smart reports in minutes'}
           </p>
         </div>
 
+        {showUserReports ? (
+          <UserReports user={user} onUploadNew={handleUploadNew} />
+        ) : (
         <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
           {/* Left Column - Upload & Generate */}
           <div className="space-y-8">
@@ -285,6 +325,7 @@ function App() {
             )}
           </div>
         </div>
+        )}
       </main>
         </div>
       </LocaleProvider>
