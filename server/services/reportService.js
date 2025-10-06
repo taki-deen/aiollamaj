@@ -48,29 +48,31 @@ const generateReport = async (data, prompt) => {
     const dataString = JSON.stringify(data, null, 2);
     const fullPrompt = `Based on the following data: ${dataString}\n\nPlease analyze this data and ${prompt}. Provide insights, patterns, and recommendations.`;
 
-    // Using Hugging Face Inference API (Free tier: 30k requests/month)
-    // Using a better model for text generation
+    // Using Hugging Face Router API with Kimi model (Better performance)
     const response = await axios.post(
-      `https://api-inference.huggingface.co/models/microsoft/DialoGPT-large`,
+      'https://router.huggingface.co/v1/chat/completions',
       {
-        inputs: fullPrompt,
-        parameters: {
-          max_length: 1000,
-          temperature: 0.7,
-          do_sample: true
-        }
+        model: 'moonshotai/Kimi-K2-Instruct-0905',
+        messages: [
+          {
+            role: 'user',
+            content: fullPrompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 2000
       },
       {
         headers: {
-          'Authorization': `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+          'Authorization': `Bearer ${process.env.HF_TOKEN}`,
           'Content-Type': 'application/json'
         }
       }
     );
 
-    // Extract the generated text from Hugging Face response
-    if (response.data && response.data[0] && response.data[0].generated_text) {
-      return response.data[0].generated_text;
+    // Extract the generated text from Hugging Face Router response
+    if (response.data && response.data.choices && response.data.choices[0] && response.data.choices[0].message) {
+      return response.data.choices[0].message.content;
     } else {
       throw new Error('Invalid response from AI service');
     }
@@ -78,7 +80,7 @@ const generateReport = async (data, prompt) => {
     console.error('AI generation error:', error);
     
     // Fallback to a simple analysis if API fails
-    if (error.response?.status === 503) {
+    if (error.response?.status === 503 || error.response?.status === 429) {
       return generateFallbackReport(data, prompt);
     }
     

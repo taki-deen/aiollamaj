@@ -1,6 +1,6 @@
 # إعداد AI API المجاني
 
-## 🤖 Hugging Face API (موصى به)
+## 🤖 Hugging Face Router API (موصى به)
 
 ### الخطوات:
 1. اذهب إلى [Hugging Face](https://huggingface.co/)
@@ -11,14 +11,41 @@
 6. ضعه في `server/config.env`:
 
 ```env
-HUGGINGFACE_API_KEY=your_token_here
+HF_TOKEN=your_token_here
 ```
 
 ### المميزات:
-- ✅ 30,000 طلب مجاني شهرياً
-- ✅ لا حاجة لبطاقة ائتمان
-- ✅ نماذج قوية ومتعددة
-- ✅ سرعة جيدة
+- ✅ **Kimi-K2-Instruct-0905** - نموذج متقدم للتحليل
+- ✅ **Router API** - أداء أفضل من Inference API
+- ✅ **30,000 طلب مجاني شهرياً**
+- ✅ **لا حاجة لبطاقة ائتمان**
+- ✅ **سرعة عالية ودقة ممتازة**
+- ✅ **دعم 2000 token** للاستجابة
+
+### مثال الاستخدام:
+```javascript
+// API call example
+const response = await axios.post(
+  'https://router.huggingface.co/v1/chat/completions',
+  {
+    model: 'moonshotai/Kimi-K2-Instruct-0905',
+    messages: [
+      {
+        role: 'user',
+        content: 'Analyze this data and provide insights...'
+      }
+    ],
+    temperature: 0.7,
+    max_tokens: 2000
+  },
+  {
+    headers: {
+      'Authorization': `Bearer ${process.env.HF_TOKEN}`,
+      'Content-Type': 'application/json'
+    }
+  }
+);
+```
 
 ---
 
