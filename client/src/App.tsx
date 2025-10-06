@@ -30,7 +30,6 @@ interface User {
 
 function App() {
   const [currentReport, setCurrentReport] = useState<Report | null>(null);
-  const [reports, setReports] = useState<Report[]>([]);
   const [user, setUser] = useState<User | null>(null);
   const [showLogin, setShowLogin] = useState(false);
   const [showRegister, setShowRegister] = useState(false);
@@ -62,7 +61,6 @@ function App() {
     localStorage.removeItem('user');
     setUser(null);
     setCurrentReport(null);
-    setReports([]);
   };
 
   if (loading) {
