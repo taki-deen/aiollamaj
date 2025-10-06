@@ -48,17 +48,84 @@ const generateReport = async (data, prompt) => {
     const dataString = JSON.stringify(data, null, 2);
     const fullPrompt = `Based on the following data: ${dataString}\n\nPlease analyze this data and ${prompt}. Provide insights, patterns, and recommendations.`;
 
-    const response = await axios.post(`${process.env.OLLAMA_URL}/api/generate`, {
-      model: 'llama2',
-      prompt: fullPrompt,
-      stream: false
-    });
+    // Using Hugging Face Inference API (Free tier: 30k requests/month)
+    // Using a better model for text generation
+    const response = await axios.post(
+      `https://api-inference.huggingface.co/models/microsoft/DialoGPT-large`,
+      {
+        inputs: fullPrompt,
+        parameters: {
+          max_length: 1000,
+          temperature: 0.7,
+          do_sample: true
+        }
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${process.env.HUGGINGFACE_API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
 
-    return response.data.response;
+    // Extract the generated text from Hugging Face response
+    if (response.data && response.data[0] && response.data[0].generated_text) {
+      return response.data[0].generated_text;
+    } else {
+      throw new Error('Invalid response from AI service');
+    }
   } catch (error) {
     console.error('AI generation error:', error);
+    
+    // Fallback to a simple analysis if API fails
+    if (error.response?.status === 503) {
+      return generateFallbackReport(data, prompt);
+    }
+    
     throw new Error('Failed to generate AI report');
   }
+};
+
+// Fallback function when AI API is unavailable
+const generateFallbackReport = (data, prompt) => {
+  const dataLength = data.length;
+  const columns = data.length > 0 ? Object.keys(data[0]) : [];
+  
+  return `
+# Data Analysis Report
+
+## Summary
+- Total records: ${dataLength}
+- Columns: ${columns.join(', ')}
+- Analysis request: ${prompt}
+
+## Basic Statistics
+${columns.map(col => {
+  const values = data.map(row => row[col]).filter(val => val !== '');
+  const numericValues = values.filter(val => !isNaN(parseFloat(val)));
+  
+  if (numericValues.length > 0) {
+    const sum = numericValues.reduce((a, b) => a + parseFloat(b), 0);
+    const avg = sum / numericValues.length;
+    const min = Math.min(...numericValues);
+    const max = Math.max(...numericValues);
+    
+    return `- ${col}: Average ${avg.toFixed(2)}, Min ${min}, Max ${max}`;
+  } else {
+    const uniqueValues = [...new Set(values)];
+    return `- ${col}: ${uniqueValues.length} unique values`;
+  }
+}).join('\n')}
+
+## Recommendations
+Based on the data structure, consider:
+1. Data validation for missing values
+2. Statistical analysis for numeric columns
+3. Categorization for text columns
+4. Data visualization for better insights
+
+*Note: This is a basic analysis. For advanced AI insights, please check API availability.*
+  `;
 };
 
 const generatePDF = async (report) => {
