@@ -4,6 +4,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useLocale } from '../contexts/LocaleContext';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_ROOT = API_BASE.replace('/api', '');
 
 interface User {
   _id: string;
@@ -14,6 +15,7 @@ interface User {
   role: string;
   createdAt: string;
   lastLogin?: string;
+  avatarUrl?: string;
 }
 
 interface UserSettingsProps {
@@ -51,6 +53,9 @@ const UserSettings: React.FC<UserSettingsProps> = ({ user, onBack, onUserUpdate 
     confirm: false
   });
 
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(user.avatarUrl ? `${API_ROOT}${user.avatarUrl}` : null);
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+
   useEffect(() => {
     setProfileData({
       firstName: user.firstName,
@@ -72,6 +77,40 @@ const UserSettings: React.FC<UserSettingsProps> = ({ user, onBack, onUserUpdate 
       ...passwordData,
       [e.target.name]: e.target.value
     });
+  };
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    setAvatarFile(file);
+    setAvatarPreview(URL.createObjectURL(file));
+  };
+
+  const handleAvatarUpload = async () => {
+    if (!avatarFile) return;
+    setLoading(true);
+    setError('');
+    setSuccess('');
+    try {
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('avatar', avatarFile);
+      const response = await axios.post(`${API_BASE}/auth/profile/avatar`, formData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (response.data.success) {
+        const updatedUser = response.data.data.user as User;
+        onUserUpdate(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
+        setSuccess(t('profileUpdated'));
+        setAvatarFile(null);
+        setAvatarPreview(updatedUser.avatarUrl ? `${API_ROOT}${updatedUser.avatarUrl}` : null);
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || t('updateFailed'));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
@@ -263,6 +302,33 @@ const UserSettings: React.FC<UserSettingsProps> = ({ user, onBack, onUserUpdate 
             </div>
 
             <form onSubmit={handleProfileSubmit} className="space-y-6">
+              <div className="flex items-center gap-6">
+                <div className="w-20 h-20 rounded-full overflow-hidden bg-gray-200 dark:bg-slate-700 flex items-center justify-center">
+                  {avatarPreview ? (
+                    <img src={avatarPreview} alt="avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  )}
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleAvatarChange}
+                    className="block w-full text-sm text-gray-900 dark:text-gray-100 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 dark:file:bg-slate-700 dark:file:text-indigo-300"
+                  />
+                  <button
+                    type="button"
+                    disabled={!avatarFile || loading}
+                    onClick={handleAvatarUpload}
+                    className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-5 py-2 rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? t('saving') : t('update')}
+                  </button>
+                </div>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">

@@ -4,6 +4,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useLocale } from '../contexts/LocaleContext';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+const API_ROOT = API_BASE.replace('/api', '');
 
 interface User {
   _id: string;
@@ -15,6 +16,7 @@ interface User {
   isActive: boolean;
   createdAt: string;
   lastLogin?: string;
+  avatarUrl?: string;
 }
 
 interface UserManagementProps {
@@ -366,10 +368,18 @@ const UserManagement: React.FC<UserManagementProps> = ({ user, onBack }) => {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-4">
-                        <div className="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
-                          <span className="text-white text-lg font-bold">
-                            {userItem.firstName.charAt(0)}{userItem.lastName.charAt(0)}
-                          </span>
+                        <div className="w-12 h-12 rounded-full overflow-hidden bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center">
+                          {userItem.avatarUrl ? (
+                            <img 
+                              src={`${API_ROOT}${userItem.avatarUrl}`} 
+                              alt={`${userItem.firstName} ${userItem.lastName}`}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <span className="text-white text-lg font-bold">
+                              {userItem.firstName.charAt(0)}{userItem.lastName.charAt(0)}
+                            </span>
+                          )}
                         </div>
                         <div>
                           <h3 className="text-lg font-semibold text-gray-900 dark:text-white">

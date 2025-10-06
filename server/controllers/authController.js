@@ -1,5 +1,7 @@
 const User = require('../models/User');
 const { generateToken } = require('../middleware/auth');
+const path = require('path');
+const fs = require('fs');
 
 // Register new user
 const register = async (req, res) => {

@@ -2,6 +2,7 @@ require('dotenv').config({ path: './config.env' });
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const path = require('path');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -19,6 +20,9 @@ mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/ai-report
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Static serving for uploads (avatars)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
 app.use('/api/auth', authRoutes);

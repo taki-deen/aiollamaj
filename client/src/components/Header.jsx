@@ -5,6 +5,7 @@ import { useLocale } from '../contexts/LocaleContext';
 const Header = ({ user, onLogout }) => {
   const { theme, toggleTheme } = useTheme();
   const { locale, toggleLocale, t } = useLocale();
+  const apiRoot = (process.env.REACT_APP_API_URL || 'http://localhost:5000/api').replace('/api','');
   return (
     <header className="bg-white/90 backdrop-blur-md shadow-xl border-b border-white/20 sticky top-0 z-50 dark:bg-slate-900/60 dark:border-slate-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -37,10 +38,14 @@ const Header = ({ user, onLogout }) => {
           {user ? (
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-3 bg-gradient-to-r from-indigo-50 to-purple-50 px-4 py-2 rounded-full">
-                <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">
-                    {user.firstName.charAt(0)}{user.lastName.charAt(0)}
-                  </span>
+                <div className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center">
+                  {user.avatarUrl ? (
+                    <img src={`${apiRoot}${user.avatarUrl}`} alt="avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-white text-sm font-bold">
+                      {user.firstName.charAt(0)}{user.lastName.charAt(0)}
+                    </span>
+                  )}
                 </div>
                 <div>
                   <div className="text-sm font-semibold text-gray-800">
