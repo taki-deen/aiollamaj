@@ -102,7 +102,7 @@ const translations: Record<Locale, Record<string, string>> = {
     completed: 'مكتمل',
     processing: 'قيد المعالجة',
     pending: 'في الانتظار',
-    error: 'خطأ',
+    reportError: 'خطأ في التقرير',
     public: 'عام',
     private: 'خاص',
     created: 'تاريخ الإنشاء',
@@ -135,7 +135,7 @@ const translations: Record<Locale, Record<string, string>> = {
     passwordChanged: 'تم تغيير كلمة المرور بنجاح',
     userUpdated: 'تم تحديث المستخدم بنجاح',
     userDeleted: 'تم حذف المستخدم بنجاح',
-    reportGenerated: 'تم توليد التقرير بنجاح',
+    reportGeneratedSuccess: 'تم توليد التقرير بنجاح',
     fileUploaded: 'تم رفع الملف بنجاح',
     
     // Errors
@@ -239,7 +239,7 @@ const translations: Record<Locale, Record<string, string>> = {
     completed: 'Completed',
     processing: 'Processing',
     pending: 'Pending',
-    error: 'Error',
+    reportError: 'Report Error',
     public: 'Public',
     private: 'Private',
     created: 'Created',
@@ -272,7 +272,7 @@ const translations: Record<Locale, Record<string, string>> = {
     passwordChanged: 'Password changed successfully',
     userUpdated: 'User updated successfully',
     userDeleted: 'User deleted successfully',
-    reportGenerated: 'Report generated successfully',
+    reportGeneratedSuccess: 'Report generated successfully',
     fileUploaded: 'File uploaded successfully',
     
     // Errors

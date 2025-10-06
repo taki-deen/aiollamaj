@@ -31,6 +31,8 @@ interface User {
   firstName: string;
   lastName: string;
   role: string;
+  createdAt: string;
+  lastLogin?: string;
 }
 
 function AppContent() {

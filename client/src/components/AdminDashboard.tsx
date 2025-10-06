@@ -133,7 +133,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
     processing: reports.filter(r => r.status === 'processing').length,
     error: reports.filter(r => r.status === 'error').length,
     public: reports.filter(r => r.isPublic).length,
-    users: [...new Set(reports.map(r => r.userId?._id).filter(Boolean))].length
+    users: Array.from(new Set(reports.map(r => r.userId?._id).filter(Boolean))).length
   };
 
   if (loading) {
