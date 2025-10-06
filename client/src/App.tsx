@@ -8,6 +8,7 @@ import Register from './components/Register';
 import Header from './components/Header';
 import UserReports from './components/UserReports';
 import AdminDashboard from './components/AdminDashboard';
+import UserSettings from './components/UserSettings';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LocaleProvider } from './contexts/LocaleContext';
 
@@ -39,6 +40,7 @@ function App() {
   const [showRegister, setShowRegister] = useState(false);
   const [showUserReports, setShowUserReports] = useState(false);
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
+  const [showUserSettings, setShowUserSettings] = useState(false);
   const [loading, setLoading] = useState(true);
   const [locale, setLocale] = useState<'ar' | 'en'>('ar');
 
@@ -70,18 +72,25 @@ function App() {
     setCurrentReport(null);
     setShowUserReports(false);
     setShowAdminDashboard(false);
+    setShowUserSettings(false);
   };
 
   const handleUploadNew = () => {
     setShowUserReports(false);
     setShowAdminDashboard(false);
+    setShowUserSettings(false);
     setCurrentReport(null);
   };
 
   const handleBackToMain = () => {
     setShowUserReports(false);
     setShowAdminDashboard(false);
+    setShowUserSettings(false);
     setCurrentReport(null);
+  };
+
+  const handleUserUpdate = (updatedUser: User) => {
+    setUser(updatedUser);
   };
 
   if (loading) {
@@ -123,6 +132,17 @@ function App() {
               setShowLogin(true);
             }}
           />
+        </LocaleProvider>
+      </ThemeProvider>
+    );
+  }
+
+  if (showUserSettings && user) {
+    return (
+      <ThemeProvider>
+        <LocaleProvider>
+          <Header user={user} onLogout={handleLogout} />
+          <UserSettings user={user} onBack={handleBackToMain} onUserUpdate={handleUserUpdate} />
         </LocaleProvider>
       </ThemeProvider>
     );
@@ -246,9 +266,10 @@ function App() {
               onClick={() => {
                 setShowUserReports(true);
                 setShowAdminDashboard(false);
+                setShowUserSettings(false);
               }}
               className={`flex-1 py-3 px-6 rounded-lg font-medium transition-all duration-200 ${
-                showUserReports && !showAdminDashboard
+                showUserReports && !showAdminDashboard && !showUserSettings
                   ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' 
                   : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
               }`}
@@ -260,14 +281,36 @@ function App() {
                 {locale === 'ar' ? 'تقاريري' : 'My Reports'}
               </span>
             </button>
+
+            <button
+              onClick={() => {
+                setShowUserReports(false);
+                setShowAdminDashboard(false);
+                setShowUserSettings(true);
+              }}
+              className={`flex-1 py-3 px-6 rounded-lg font-medium transition-all duration-200 ${
+                showUserSettings && !showAdminDashboard && !showUserReports
+                  ? 'bg-white dark:bg-slate-700 text-emerald-600 dark:text-emerald-400 shadow-sm' 
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              <span className="flex items-center justify-center">
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                {locale === 'ar' ? 'الإعدادات' : 'Settings'}
+              </span>
+            </button>
             {user && user.role === 'admin' && (
               <button
                 onClick={() => {
                   setShowUserReports(false);
                   setShowAdminDashboard(true);
+                  setShowUserSettings(false);
                 }}
                 className={`flex-1 py-3 px-6 rounded-lg font-medium transition-all duration-200 ${
-                  showAdminDashboard
+                  showAdminDashboard && !showUserSettings && !showUserReports
                     ? 'bg-white dark:bg-slate-700 text-red-600 dark:text-red-400 shadow-sm' 
                     : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
                 }`}
@@ -313,11 +356,11 @@ function App() {
                 </div>
                 <h3 className="text-2xl font-bold text-gray-800">رفع الملفات</h3>
               </div>
-              <FileUpload 
-                onUploadSuccess={(reportId) => {
-                  fetchReport(reportId);
-                }}
-              />
+            <FileUpload 
+              onUploadSuccess={(reportId) => {
+                fetchReport(reportId);
+              }}
+            />
             </div>
             
             {currentReport && currentReport.status === 'pending' && (
@@ -330,12 +373,12 @@ function App() {
                   </div>
                   <h3 className="text-2xl font-bold text-gray-800">توليد التقرير</h3>
                 </div>
-                <ReportGenerator 
-                  reportId={currentReport._id}
-                  onReportGenerated={(report) => {
-                    setCurrentReport(report);
-                  }}
-                />
+              <ReportGenerator 
+                reportId={currentReport._id}
+                onReportGenerated={(report) => {
+                  setCurrentReport(report);
+                }}
+              />
               </div>
             )}
           </div>
@@ -352,10 +395,10 @@ function App() {
                   </div>
                   <h3 className="text-2xl font-bold text-gray-800">التقرير المولد</h3>
                 </div>
-                <ReportDisplay 
-                  report={currentReport}
-                  onDownloadPDF={() => downloadPDF(currentReport._id)}
-                />
+              <ReportDisplay 
+                report={currentReport}
+                onDownloadPDF={() => downloadPDF(currentReport._id)}
+              />
               </div>
             )}
             
@@ -374,7 +417,7 @@ function App() {
         </div>
         )}
       </main>
-        </div>
+      </div>
       </LocaleProvider>
     </ThemeProvider>
   );
