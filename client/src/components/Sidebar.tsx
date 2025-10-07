@@ -11,9 +11,6 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, user, currentView, onNavigate }) => {
   const { locale, t } = useLocale();
-  
-  console.log('Sidebar - Current locale:', locale);
-  console.log('Sidebar - createNewReport:', t('createNewReport'));
 
   const getMenuItems = () => {
     const items = [

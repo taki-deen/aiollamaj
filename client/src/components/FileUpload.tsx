@@ -84,12 +84,24 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
             type="file"
             accept=".csv,.xlsx,.xls"
             onChange={handleFileChange}
-            className="block w-full text-xs sm:text-sm text-gray-500 dark:text-gray-400 file:mr-2 sm:file:mr-4 file:py-2 sm:file:py-3 file:px-3 sm:file:px-6 file:rounded-lg sm:file:rounded-xl file:border-0 file:text-xs sm:file:text-sm file:font-semibold file:bg-gradient-to-r file:from-blue-50 file:to-cyan-50 file:text-blue-700 hover:file:bg-gradient-to-r hover:file:from-blue-100 hover:file:to-cyan-100 transition-all duration-200 dark:file:from-blue-900 dark:file:to-cyan-900 dark:file:text-blue-200"
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
           />
-          <div className="absolute inset-y-0 right-0 pr-2 sm:pr-3 flex items-center pointer-events-none">
-            <svg className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-            </svg>
+          <div className="flex items-center justify-between w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-slate-700 cursor-pointer hover:border-blue-400 transition-colors">
+            <div className="flex items-center">
+              <svg className="w-5 h-5 text-gray-400 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                {file ? file.name : t('noFileChosen')}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => document.getElementById('fileInput')?.click()}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium hover:bg-blue-600 transition-colors"
+            >
+              {t('chooseFile')}
+            </button>
           </div>
         </div>
       </div>

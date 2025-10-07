@@ -46,6 +46,8 @@ const translations: Record<Locale, Record<string, string>> = {
     fileSizeLimit: 'الحد الأقصى: 10 ميجابايت',
     noReportsYet: 'لا توجد تقارير بعد',
     uploadFileAndStart: 'ارفع ملفاً وابدأ في إنشاء تقريرك الأول',
+    noFileChosen: 'لم يتم اختيار ملف',
+    chooseFile: 'اختيار ملف',
     
     // Report Generation
     generateReport: 'توليد التقرير',
@@ -194,6 +196,8 @@ const translations: Record<Locale, Record<string, string>> = {
     fileSizeLimit: 'Max size: 10MB',
     noReportsYet: 'No reports yet',
     uploadFileAndStart: 'Upload a file and start creating your first report',
+    noFileChosen: 'No file chosen',
+    chooseFile: 'Choose File',
     
     // Report Generation
     generateReport: 'Generate Report',
@@ -322,11 +326,7 @@ export const LocaleProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     document.documentElement.dir = locale === 'ar' ? 'rtl' : 'ltr';
   }, [locale]);
 
-  const toggleLocale = () => {
-    const newLocale = locale === 'ar' ? 'en' : 'ar';
-    console.log('Changing locale from', locale, 'to', newLocale);
-    setLocale(newLocale);
-  };
+  const toggleLocale = () => setLocale(prev => (prev === 'ar' ? 'en' : 'ar'));
 
   const value = useMemo(() => ({
     locale,
