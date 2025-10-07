@@ -74,7 +74,7 @@ const FileUpload: React.FC<FileUploadProps> = ({ onUploadSuccess }) => {
     <div className="space-y-4 sm:space-y-6">
       <div>
         <label htmlFor="fileInput" className="block text-sm sm:text-base font-medium text-gray-700 dark:text-gray-300 mb-2 sm:mb-3">
-          اختر ملف البيانات
+          {t('selectDataFile')}
         </label>
         <div className="relative">
           <input

@@ -452,7 +452,7 @@ function AppContent() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
                 </div>
-                <h3 className="text-2xl font-bold text-gray-800">رفع الملفات</h3>
+                <h3 className="text-2xl font-bold text-gray-800 dark:text-white">{t('uploadFiles')}</h3>
               </div>
             <FileUpload 
               onUploadSuccess={(reportId) => {
@@ -507,8 +507,8 @@ function AppContent() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 </div>
-                <h3 className="text-2xl font-bold text-gray-600 mb-4">لا توجد تقارير بعد</h3>
-                <p className="text-gray-500 text-lg">ارفع ملفاً وابدأ في إنشاء تقريرك الأول</p>
+                <h3 className="text-2xl font-bold text-gray-600 dark:text-gray-300 mb-4">{t('noReportsYet')}</h3>
+                <p className="text-gray-500 dark:text-gray-400 text-lg">{t('uploadFileAndStart')}</p>
               </div>
             )}
           </div>

@@ -37,11 +37,15 @@ const translations: Record<Locale, Record<string, string>> = {
     
     // File Upload
     uploadFile: 'رفع الملف',
+    uploadFiles: 'رفع الملفات',
     uploadFileMessage: 'ارفع ملف CSV أو Excel لبدء التحليل',
     selectFile: 'اختر ملف',
+    selectDataFile: 'اختر ملف البيانات',
     dragDropMessage: 'اسحب الملف هنا أو انقر للاختيار',
     supportedFormats: 'الملفات المدعومة: CSV, XLSX, XLS',
     fileSizeLimit: 'الحد الأقصى: 10 ميجابايت',
+    noReportsYet: 'لا توجد تقارير بعد',
+    uploadFileAndStart: 'ارفع ملفاً وابدأ في إنشاء تقريرك الأول',
     
     // Report Generation
     generateReport: 'توليد التقرير',
@@ -181,11 +185,15 @@ const translations: Record<Locale, Record<string, string>> = {
     
     // File Upload
     uploadFile: 'Upload File',
+    uploadFiles: 'Upload Files',
     uploadFileMessage: 'Upload a CSV or Excel file to start analysis',
     selectFile: 'Select File',
+    selectDataFile: 'Select Data File',
     dragDropMessage: 'Drag file here or click to select',
     supportedFormats: 'Supported formats: CSV, XLSX, XLS',
     fileSizeLimit: 'Max size: 10MB',
+    noReportsYet: 'No reports yet',
+    uploadFileAndStart: 'Upload a file and start creating your first report',
     
     // Report Generation
     generateReport: 'Generate Report',
