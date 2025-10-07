@@ -1,14 +1,13 @@
 const Report = require('../models/Report');
 const { processFile, generateReport, generatePDF } = require('../services/reportService');
+const { sendSuccess, sendError } = require('../utils/responseHelper');
+const { checkReportOwnership, checkAdminAccess, findReportById } = require('../utils/reportHelper');
 
 // Upload file and create report
 const uploadFile = async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'No file uploaded' 
-      });
+      return sendError(res, 'No file uploaded', 400);
     }
 
     const fileData = await processFile(req.file.path);
@@ -23,22 +22,14 @@ const uploadFile = async (req, res) => {
     
     await report.save();
     
-    res.json({ 
-      success: true,
-      message: 'File uploaded successfully',
-      data: {
-        reportId: report._id,
-        filename: report.filename,
-        recordCount: fileData.length
-      }
-    });
+    sendSuccess(res, {
+      reportId: report._id,
+      filename: report.filename,
+      recordCount: fileData.length
+    }, 'File uploaded successfully');
   } catch (error) {
     console.error('Upload error:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Upload failed',
-      error: error.message
-    });
+    sendError(res, 'Upload failed', 500, error);
   }
 };
 
@@ -48,21 +39,8 @@ const generateAReport = async (req, res) => {
     const { reportId } = req.params;
     const { prompt } = req.body;
 
-    const report = await Report.findById(reportId);
-    if (!report) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'Report not found' 
-      });
-    }
-
-    // Check if user owns this report (if authenticated)
-    if (req.user && report.userId && !report.userId.equals(req.user._id)) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. You can only generate reports for your own files.'
-      });
-    }
+    const report = await findReportById(reportId);
+    checkReportOwnership(report, req.user?._id);
 
     const aiResponse = await generateReport(report.data, prompt);
     
@@ -73,28 +51,22 @@ const generateAReport = async (req, res) => {
     
     await report.save();
     
-    res.json({ 
-      success: true,
-      message: 'Report generated successfully',
-      data: {
-        report: {
-          _id: report._id,
-          filename: report.filename,
-          prompt: report.prompt,
-          generatedReport: report.generatedReport,
-          status: report.status,
-          generatedAt: report.generatedAt,
-          createdAt: report.createdAt
-        }
+    sendSuccess(res, {
+      report: {
+        _id: report._id,
+        filename: report.filename,
+        prompt: report.prompt,
+        generatedReport: report.generatedReport,
+        status: report.status,
+        generatedAt: report.generatedAt,
+        createdAt: report.createdAt
       }
-    });
+    }, 'Report generated successfully');
   } catch (error) {
     console.error('Generate report error:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Report generation failed',
-      error: error.message
-    });
+    const statusCode = error.message.includes('not found') ? 404 : 
+                       error.message.includes('Access denied') ? 403 : 500;
+    sendError(res, error.message || 'Report generation failed', statusCode, error);
   }
 };
 
@@ -103,29 +75,18 @@ const getAllReports = async (req, res) => {
   try {
     const query = {};
     
-    // If user is authenticated, only show their reports
     if (req.user) {
       query.userId = req.user._id;
     }
     
     const reports = await Report.find(query)
-      .select('-data') // Exclude data field for performance
+      .select('-data')
       .sort({ createdAt: -1 });
     
-    res.json({
-      success: true,
-      data: {
-        reports,
-        count: reports.length
-      }
-    });
+    sendSuccess(res, { reports, count: reports.length });
   } catch (error) {
     console.error('Get reports error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get reports',
-      error: error.message
-    });
+    sendError(res, 'Failed to get reports', 500, error);
   }
 };
 
@@ -133,36 +94,15 @@ const getAllReports = async (req, res) => {
 const getReport = async (req, res) => {
   try {
     const { reportId } = req.params;
+    const report = await findReportById(reportId);
+    checkReportOwnership(report, req.user?._id);
     
-    const report = await Report.findById(reportId);
-    if (!report) {
-      return res.status(404).json({
-        success: false,
-        message: 'Report not found'
-      });
-    }
-
-    // Check if user owns this report (if authenticated)
-    if (req.user && report.userId && !report.userId.equals(req.user._id)) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. You can only view your own reports.'
-      });
-    }
-    
-    res.json({
-      success: true,
-      data: {
-        report
-      }
-    });
+    sendSuccess(res, { report });
   } catch (error) {
     console.error('Get report error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to get report',
-      error: error.message
-    });
+    const statusCode = error.message.includes('not found') ? 404 : 
+                       error.message.includes('Access denied') ? 403 : 500;
+    sendError(res, error.message || 'Failed to get report', statusCode, error);
   }
 };
 
@@ -170,28 +110,11 @@ const getReport = async (req, res) => {
 const downloadReport = async (req, res) => {
   try {
     const { reportId } = req.params;
-    
-    const report = await Report.findById(reportId);
-    if (!report) {
-      return res.status(404).json({
-        success: false,
-        message: 'Report not found'
-      });
-    }
-
-    // Check if user owns this report (if authenticated)
-    if (req.user && report.userId && !report.userId.equals(req.user._id)) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. You can only download your own reports.'
-      });
-    }
+    const report = await findReportById(reportId);
+    checkReportOwnership(report, req.user?._id);
 
     if (!report.generatedReport) {
-      return res.status(400).json({
-        success: false,
-        message: 'Report not generated yet'
-      });
+      return sendError(res, 'Report not generated yet', 400);
     }
 
     const pdfBuffer = await generatePDF(report);
@@ -201,11 +124,9 @@ const downloadReport = async (req, res) => {
     res.send(pdfBuffer);
   } catch (error) {
     console.error('Download report error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to download report',
-      error: error.message
-    });
+    const statusCode = error.message.includes('not found') ? 404 : 
+                       error.message.includes('Access denied') ? 403 : 500;
+    sendError(res, error.message || 'Failed to download report', statusCode, error);
   }
 };
 
@@ -213,100 +134,50 @@ const downloadReport = async (req, res) => {
 const deleteReport = async (req, res) => {
   try {
     const { reportId } = req.params;
-    
-    const report = await Report.findById(reportId);
-    if (!report) {
-      return res.status(404).json({
-        success: false,
-        message: 'Report not found'
-      });
-    }
-
-    // Check if user owns this report (if authenticated)
-    if (req.user && report.userId && !report.userId.equals(req.user._id)) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied. You can only delete your own reports.'
-      });
-    }
+    const report = await findReportById(reportId);
+    checkReportOwnership(report, req.user?._id);
 
     await Report.findByIdAndDelete(reportId);
-    
-    res.json({
-      success: true,
-      message: 'Report deleted successfully'
-    });
+    sendSuccess(res, {}, 'Report deleted successfully');
   } catch (error) {
     console.error('Delete report error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete report',
-      error: error.message
-    });
+    const statusCode = error.message.includes('not found') ? 404 : 
+                       error.message.includes('Access denied') ? 403 : 500;
+    sendError(res, error.message || 'Failed to delete report', statusCode, error);
   }
 };
 
 // Get all reports for admin with user details
 const getAllReportsForAdmin = async (req, res) => {
   try {
-    // Check if user is admin
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'Admin access required' 
-      });
-    }
+    checkAdminAccess(req.user);
 
     const reports = await Report.find({})
-      .populate('userId', 'username email firstName lastName role createdAt lastLogin')
+      .populate('userId', 'username email firstName lastName role createdAt lastLogin avatarUrl')
       .sort({ createdAt: -1 });
 
-    res.json({ 
-      success: true, 
-      data: { reports: reports } 
-    });
+    sendSuccess(res, { reports });
   } catch (error) {
     console.error('Fetch all reports for admin error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to fetch all reports' 
-    });
+    const statusCode = error.message.includes('Admin access') ? 403 : 500;
+    sendError(res, error.message || 'Failed to fetch all reports', statusCode, error);
   }
 };
 
 // Delete any report by admin
 const deleteReportByAdmin = async (req, res) => {
   try {
-    if (!req.user || req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Admin access required'
-      });
-    }
-
+    checkAdminAccess(req.user);
     const { reportId } = req.params;
-    
-    const report = await Report.findById(reportId);
-    if (!report) {
-      return res.status(404).json({
-        success: false,
-        message: 'Report not found'
-      });
-    }
-
+    await findReportById(reportId);
     await Report.findByIdAndDelete(reportId);
     
-    res.json({
-      success: true,
-      message: 'Report deleted successfully'
-    });
+    sendSuccess(res, {}, 'Report deleted successfully');
   } catch (error) {
     console.error('Delete report by admin error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete report',
-      error: error.message
-    });
+    const statusCode = error.message.includes('not found') ? 404 : 
+                       error.message.includes('Admin access') ? 403 : 500;
+    sendError(res, error.message || 'Failed to delete report', statusCode, error);
   }
 };
 

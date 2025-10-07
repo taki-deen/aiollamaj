@@ -45,25 +45,16 @@ const parseCSV = (csvContent) => {
 
 const generateReport = async (data, prompt) => {
   try {
-    console.log('\n=== Generating Report ===');
-    console.log('User Prompt:', prompt);
-    console.log('Data Records:', data.length);
-    
     const apiKey = process.env.GROQ_API_KEY || process.env.HF_TOKEN;
     
     if (!apiKey || apiKey === 'your_api_key_here' || apiKey === 'your_huggingface_token_here') {
-      console.log('No valid API key found, using fallback analysis...');
       return generateFallbackReport(data, prompt);
     }
 
     const dataSample = data.slice(0, 30);
     const dataString = JSON.stringify(dataSample, null, 2);
     
-    const userPrompt = prompt && prompt.trim() 
-      ? prompt.trim() 
-      : 'Provide comprehensive insights and analysis';
-    
-    console.log('Processed Prompt:', userPrompt);
+    const userPrompt = prompt?.trim() || 'Provide comprehensive insights and analysis';
     
     const fullPrompt = `You are a professional data analyst. I need you to focus SPECIFICALLY on the user's request below.
 
@@ -181,13 +172,6 @@ Remember: Your response must be UNIQUE, SPECIFIC to the user's request, and prov
     }
   } catch (error) {
     console.error('AI generation error:', error.message);
-    
-    if (error.response) {
-      console.error('API Response Status:', error.response.status);
-      console.error('API Response Error:', error.response.data);
-    }
-    
-    console.log('Using fallback analysis due to error...');
     return generateFallbackReport(data, prompt);
   }
 };

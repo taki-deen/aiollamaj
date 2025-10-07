@@ -4,6 +4,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useLocale } from '../contexts/LocaleContext';
 import UserManagement from './UserManagement';
 import AIChatAdmin from './AIChatAdmin';
+import { getStatusColor, getStatusText, formatDate } from '../utils/reportHelpers';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -35,6 +36,27 @@ interface AdminDashboardProps {
   user: any;
   onBack: () => void;
 }
+
+// Stat Card Component
+const StatCard: React.FC<{
+  icon: React.ReactNode;
+  label: string;
+  value: number;
+  bgColor: string;
+  iconColor: string;
+}> = ({ icon, label, value, bgColor, iconColor }) => (
+  <div className="bg-white dark:bg-slate-800 rounded-xl p-4 sm:p-6 shadow-lg">
+    <div className="flex items-center">
+      <div className={`p-2 sm:p-3 rounded-full ${bgColor}`}>
+        <div className={iconColor}>{icon}</div>
+      </div>
+      <div className="ml-4">
+        <p className="text-sm font-medium text-gray-600 dark:text-gray-300">{label}</p>
+        <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
+      </div>
+    </div>
+  </div>
+);
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
   const [reports, setReports] = useState<Report[]>([]);
@@ -121,34 +143,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'processing': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      case 'error': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    const statusMap = {
-      completed: locale === 'ar' ? 'مكتمل' : 'Completed',
-      processing: locale === 'ar' ? 'قيد المعالجة' : 'Processing',
-      error: locale === 'ar' ? 'خطأ' : 'Error',
-      pending: locale === 'ar' ? 'في الانتظار' : 'Pending'
-    };
-    return statusMap[status as keyof typeof statusMap] || status;
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   const filteredReports = reports.filter(report => {
     const matchesStatus = filterStatus === 'all' || report.status === filterStatus;
@@ -293,101 +287,48 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
         <>
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-6 mb-8">
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 sm:p-6 shadow-lg">
-            <div className="flex items-center">
-              <div className="p-2 sm:p-3 rounded-full bg-blue-100 dark:bg-blue-900">
-                <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                  {locale === 'ar' ? 'إجمالي التقارير' : 'Total Reports'}
-                </p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.total}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-lg">
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-green-100 dark:bg-green-900">
-                <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                  {locale === 'ar' ? 'مكتملة' : 'Completed'}
-                </p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.completed}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-lg">
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-yellow-100 dark:bg-yellow-900">
-                <svg className="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                  {locale === 'ar' ? 'قيد المعالجة' : 'Processing'}
-                </p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.processing}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-lg">
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-red-100 dark:bg-red-900">
-                <svg className="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                  {locale === 'ar' ? 'أخطاء' : 'Errors'}
-                </p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.error}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-lg">
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-purple-100 dark:bg-purple-900">
-                <svg className="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                  {locale === 'ar' ? 'عامة' : 'Public'}
-                </p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.public}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-lg">
-            <div className="flex items-center">
-              <div className="p-3 rounded-full bg-indigo-100 dark:bg-indigo-900">
-                <svg className="w-6 h-6 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
-                </svg>
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                  {t('usersTab')}
-                </p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.users}</p>
-              </div>
-            </div>
-          </div>
+          <StatCard
+            icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>}
+            label={locale === 'ar' ? 'إجمالي التقارير' : 'Total Reports'}
+            value={stats.total}
+            bgColor="bg-blue-100 dark:bg-blue-900"
+            iconColor="text-blue-600 dark:text-blue-400"
+          />
+          <StatCard
+            icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>}
+            label={locale === 'ar' ? 'مكتملة' : 'Completed'}
+            value={stats.completed}
+            bgColor="bg-green-100 dark:bg-green-900"
+            iconColor="text-green-600 dark:text-green-400"
+          />
+          <StatCard
+            icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+            label={locale === 'ar' ? 'قيد المعالجة' : 'Processing'}
+            value={stats.processing}
+            bgColor="bg-yellow-100 dark:bg-yellow-900"
+            iconColor="text-yellow-600 dark:text-yellow-400"
+          />
+          <StatCard
+            icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+            label={locale === 'ar' ? 'أخطاء' : 'Errors'}
+            value={stats.error}
+            bgColor="bg-red-100 dark:bg-red-900"
+            iconColor="text-red-600 dark:text-red-400"
+          />
+          <StatCard
+            icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+            label={locale === 'ar' ? 'عامة' : 'Public'}
+            value={stats.public}
+            bgColor="bg-purple-100 dark:bg-purple-900"
+            iconColor="text-purple-600 dark:text-purple-400"
+          />
+          <StatCard
+            icon={<svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" /></svg>}
+            label={t('usersTab')}
+            value={stats.users}
+            bgColor="bg-indigo-100 dark:bg-indigo-900"
+            iconColor="text-indigo-600 dark:text-indigo-400"
+          />
         </div>
 
         {/* Filters */}
@@ -501,7 +442,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
                         </h3>
                         <div className="flex flex-wrap gap-2 mt-2 sm:mt-0">
                           <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(report.status)}`}>
-                            {getStatusText(report.status)}
+                            {getStatusText(report.status, locale)}
                           </span>
                           {report.isPublic && (
                             <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
@@ -514,12 +455,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
                       {/* User Info with Avatar */}
                       {report.userId && (() => {
                         const userId = report.userId;
-                        // Debug: Check avatar URL
-                        if (userId.avatarUrl) {
-                          console.log('Avatar URL for', userId.username, ':', userId.avatarUrl);
-                        } else {
-                          console.log('No avatar for', userId.username);
-                        }
                         return (
                           <div className="flex items-center space-x-3 mb-4 p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
                             <div className="w-12 h-12 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
@@ -568,13 +503,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
                         <p>
                           <span className="font-medium">
                             {locale === 'ar' ? 'تاريخ الإنشاء:' : 'Created:'}
-                          </span> {formatDate(report.createdAt)}
+                          </span> {formatDate(report.createdAt, locale)}
                         </p>
                         {report.generatedAt && (
                           <p>
                             <span className="font-medium">
                               {locale === 'ar' ? 'تاريخ التوليد:' : 'Generated:'}
-                            </span> {formatDate(report.generatedAt)}
+                            </span> {formatDate(report.generatedAt, locale)}
                           </p>
                         )}
                         {report.prompt && (

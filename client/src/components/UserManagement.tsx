@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLocale } from '../contexts/LocaleContext';
+import { formatDate } from '../utils/reportHelpers';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 const API_ROOT = API_BASE.replace('/api', '');
@@ -169,15 +170,6 @@ const UserManagement: React.FC<UserManagementProps> = ({ user, onBack }) => {
     }
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   const filteredUsers = users.filter(user => {
     const matchesSearch = searchTerm === '' || 
@@ -464,13 +456,13 @@ const UserManagement: React.FC<UserManagementProps> = ({ user, onBack }) => {
                         <div>
                           <span className="font-medium">
                             {t('registered')}:
-                          </span> {formatDate(userItem.createdAt)}
+                          </span> {formatDate(userItem.createdAt, locale)}
                         </div>
                         {userItem.lastLogin && (
                           <div>
                             <span className="font-medium">
                               {t('lastLogin')}:
-                            </span> {formatDate(userItem.lastLogin)}
+                            </span> {formatDate(userItem.lastLogin, locale)}
                           </div>
                         )}
                       </div>

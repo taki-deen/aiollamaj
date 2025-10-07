@@ -1,31 +1,21 @@
 const axios = require('axios');
+const { sendSuccess, sendError } = require('../utils/responseHelper');
+const { checkAdminAccess } = require('../utils/reportHelper');
 
 const chatWithAI = async (req, res) => {
   try {
     const { message } = req.body;
-    const user = req.user;
 
-    if (!message || !message.trim()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Message is required'
-      });
+    if (!message?.trim()) {
+      return sendError(res, 'Message is required', 400);
     }
 
-    if (user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Only admins can access AI chat'
-      });
-    }
+    checkAdminAccess(req.user);
 
     const apiKey = process.env.GROQ_API_KEY || process.env.HF_TOKEN;
     
     if (!apiKey || apiKey === 'your_api_key_here' || apiKey === 'your_huggingface_token_here') {
-      return res.status(503).json({
-        success: false,
-        message: 'AI service is not configured'
-      });
+      return sendError(res, 'AI service is not configured', 503);
     }
 
     let response;
@@ -59,12 +49,9 @@ const chatWithAI = async (req, res) => {
 
       const aiResponse = response.data.choices[0].message.content;
 
-      return res.json({
-        success: true,
-        data: {
-          response: aiResponse,
-          model: 'llama-3.3-70b-versatile'
-        }
+      return sendSuccess(res, {
+        response: aiResponse,
+        model: 'llama-3.3-70b-versatile'
       });
     } else {
       response = await axios.post(
@@ -91,12 +78,9 @@ const chatWithAI = async (req, res) => {
         ? response.data[0].generated_text 
         : response.data.generated_text || 'No response generated';
 
-      return res.json({
-        success: true,
-        data: {
-          response: aiResponse,
-          model: 'mistral-7b-instruct'
-        }
+      return sendSuccess(res, {
+        response: aiResponse,
+        model: 'mistral-7b-instruct'
       });
     }
 
@@ -108,11 +92,8 @@ const chatWithAI = async (req, res) => {
       console.error('API Response Error:', error.response.data);
     }
 
-    return res.status(500).json({
-      success: false,
-      message: 'Failed to get AI response. Please try again.',
-      error: error.message
-    });
+    const statusCode = error.message.includes('Admin access') ? 403 : 500;
+    return sendError(res, error.message || 'Failed to get AI response. Please try again.', statusCode, error);
   }
 };
 

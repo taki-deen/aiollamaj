@@ -1,5 +1,7 @@
 const User = require('../models/User');
 const { generateToken } = require('../middleware/auth');
+const { sendSuccess, sendError } = require('../utils/responseHelper');
+const { checkUserExists, createUser } = require('../utils/userHelper');
 const path = require('path');
 const fs = require('fs');
 
@@ -7,50 +9,15 @@ const fs = require('fs');
 const register = async (req, res) => {
   try {
     const { username, email, password, firstName, lastName } = req.body;
-
-    // Check if user already exists
-    const existingUser = await User.findOne({
-      $or: [{ email }, { username }]
-    });
-
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: existingUser.email === email 
-          ? 'Email already registered' 
-          : 'Username already taken'
-      });
-    }
-
-    // Create new user
-    const user = new User({
-      username,
-      email,
-      password,
-      firstName,
-      lastName
-    });
-
-    await user.save();
-
-    // Generate token
+    
+    const user = await createUser({ username, email, password, firstName, lastName });
     const token = generateToken(user._id);
 
-    res.status(201).json({
-      success: true,
-      message: 'User registered successfully',
-      data: {
-        user: user.toJSON(),
-        token
-      }
-    });
+    sendSuccess(res, { user: user.toJSON(), token }, 'User registered successfully', 201);
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Registration failed',
-      error: error.message
-    });
+    sendError(res, error.message || 'Registration failed', 
+      error.message?.includes('already') ? 400 : 500, error);
   }
 };
 
@@ -375,59 +342,21 @@ const deleteUserByAdmin = async (req, res) => {
 const createUserByAdmin = async (req, res) => {
   try {
     if (req.user.role !== 'admin') {
-      return res.status(403).json({
-        success: false,
-        message: 'Admin access required'
-      });
+      return sendError(res, 'Admin access required', 403);
     }
 
     const { username, email, password, firstName, lastName, role } = req.body;
 
     if (!username || !email || !password || !firstName || !lastName) {
-      return res.status(400).json({
-        success: false,
-        message: 'All fields are required'
-      });
+      return sendError(res, 'All fields are required', 400);
     }
 
-    const existingUser = await User.findOne({
-      $or: [{ email }, { username }]
-    });
-
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: existingUser.email === email 
-          ? 'Email already registered' 
-          : 'Username already taken'
-      });
-    }
-
-    const user = new User({
-      username,
-      email,
-      password,
-      firstName,
-      lastName,
-      role: role || 'user'
-    });
-
-    await user.save();
-
-    res.status(201).json({
-      success: true,
-      message: 'User created successfully',
-      data: {
-        user: user.toJSON()
-      }
-    });
+    const user = await createUser({ username, email, password, firstName, lastName, role });
+    sendSuccess(res, { user: user.toJSON() }, 'User created successfully', 201);
   } catch (error) {
     console.error('Create user by admin error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to create user',
-      error: error.message
-    });
+    sendError(res, error.message || 'Failed to create user',
+      error.message?.includes('already') ? 400 : 500, error);
   }
 };
 

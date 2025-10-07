@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLocale } from '../contexts/LocaleContext';
+import { getStatusColor, getStatusText, formatDate } from '../utils/reportHelpers';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -99,34 +100,6 @@ const UserReports: React.FC<UserReportsProps> = ({ user, onUploadNew }) => {
     }
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'processing': return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      case 'error': return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200';
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    const statusMap = {
-      completed: locale === 'ar' ? 'مكتمل' : 'Completed',
-      processing: locale === 'ar' ? 'قيد المعالجة' : 'Processing',
-      error: locale === 'ar' ? 'خطأ' : 'Error',
-      pending: locale === 'ar' ? 'في الانتظار' : 'Pending'
-    };
-    return statusMap[status as keyof typeof statusMap] || status;
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
 
   if (loading) {
     return (
@@ -297,7 +270,7 @@ const UserReports: React.FC<UserReportsProps> = ({ user, onUploadNew }) => {
                         </h3>
                         <div className="flex flex-wrap gap-2">
                           <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(report.status)}`}>
-                            {getStatusText(report.status)}
+                            {getStatusText(report.status, locale)}
                           </span>
                           {report.isPublic && (
                             <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
@@ -311,13 +284,13 @@ const UserReports: React.FC<UserReportsProps> = ({ user, onUploadNew }) => {
                         <p>
                           <span className="font-medium">
                             {locale === 'ar' ? 'تاريخ الإنشاء:' : 'Created:'}
-                          </span> {formatDate(report.createdAt)}
+                          </span> {formatDate(report.createdAt, locale)}
                         </p>
                         {report.generatedAt && (
                           <p>
                             <span className="font-medium">
                               {locale === 'ar' ? 'تاريخ التوليد:' : 'Generated:'}
-                            </span> {formatDate(report.generatedAt)}
+                            </span> {formatDate(report.generatedAt, locale)}
                           </p>
                         )}
                         {report.prompt && (
