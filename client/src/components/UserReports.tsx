@@ -73,6 +73,32 @@ const UserReports: React.FC<UserReportsProps> = ({ user, onUploadNew }) => {
     }
   };
 
+  const deleteReportConfirm = async (reportId: string, filename: string) => {
+    const confirmMessage = locale === 'ar' 
+      ? `هل أنت متأكد من حذف التقرير "${filename}"؟` 
+      : `Are you sure you want to delete "${filename}"?`;
+    
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_BASE}/reports/${reportId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setReports(reports.filter(r => r._id !== reportId));
+      
+      if (selectedReport && selectedReport._id === reportId) {
+        setSelectedReport(null);
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || (locale === 'ar' ? 'فشل حذف التقرير' : 'Failed to delete report'));
+      console.error('Delete error:', err);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'completed': return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
@@ -319,12 +345,23 @@ const UserReports: React.FC<UserReportsProps> = ({ user, onUploadNew }) => {
                         <button
                           onClick={() => downloadPDF(report._id)}
                           className="px-4 py-2 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-200 dark:hover:bg-green-800 transition-colors duration-200"
+                          title={locale === 'ar' ? 'تحميل' : 'Download'}
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
                         </button>
                       )}
+                      
+                      <button
+                        onClick={() => deleteReportConfirm(report._id, report.filename)}
+                        className="px-4 py-2 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-200 dark:hover:bg-red-800 transition-colors duration-200"
+                        title={locale === 'ar' ? 'حذف' : 'Delete'}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
                 </div>

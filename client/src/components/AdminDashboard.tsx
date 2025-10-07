@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLocale } from '../contexts/LocaleContext';
 import UserManagement from './UserManagement';
+import AIChatAdmin from './AIChatAdmin';
 
 const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
 
@@ -41,7 +42,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState<'reports' | 'users'>('reports');
+  const [activeTab, setActiveTab] = useState<'reports' | 'users' | 'ai-chat'>('reports');
   const { theme } = useTheme();
   const { locale, t } = useLocale();
 
@@ -86,6 +87,32 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
       window.URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Download error:', err);
+    }
+  };
+
+  const deleteReportConfirm = async (reportId: string, filename: string) => {
+    const confirmMessage = locale === 'ar' 
+      ? `هل أنت متأكد من حذف التقرير "${filename}"؟` 
+      : `Are you sure you want to delete "${filename}"?`;
+    
+    if (!window.confirm(confirmMessage)) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_BASE}/reports/admin/${reportId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setReports(reports.filter(r => r._id !== reportId));
+      
+      if (selectedReport && selectedReport._id === reportId) {
+        setSelectedReport(null);
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || (locale === 'ar' ? 'فشل حذف التقرير' : 'Failed to delete report'));
+      console.error('Delete error:', err);
     }
   };
 
@@ -213,11 +240,28 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
                 {t('usersTab')}
               </span>
             </button>
+            <button
+              onClick={() => setActiveTab('ai-chat')}
+              className={`flex-1 py-3 px-6 rounded-lg font-medium transition-all duration-200 ${
+                activeTab === 'ai-chat'
+                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' 
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              <span className="flex items-center justify-center">
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+                {locale === 'ar' ? 'محادثة AI' : 'AI Chat'}
+              </span>
+            </button>
           </div>
         </div>
 
         {activeTab === 'users' ? (
           <UserManagement user={user} onBack={onBack} />
+        ) : activeTab === 'ai-chat' ? (
+          <AIChatAdmin user={user} />
         ) : (
         <>
         {/* Stats */}
@@ -472,6 +516,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
                         <button
                           onClick={() => setSelectedReport(report)}
                           className="px-4 py-2 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-800 transition-colors duration-200"
+                          title={locale === 'ar' ? 'عرض' : 'View'}
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -484,12 +529,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
                         <button
                           onClick={() => downloadPDF(report._id)}
                           className="px-4 py-2 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-200 dark:hover:bg-green-800 transition-colors duration-200"
+                          title={locale === 'ar' ? 'تحميل' : 'Download'}
                         >
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
                         </button>
                       )}
+                      
+                      <button
+                        onClick={() => deleteReportConfirm(report._id, report.filename)}
+                        className="px-4 py-2 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-200 dark:hover:bg-red-800 transition-colors duration-200"
+                        title={locale === 'ar' ? 'حذف' : 'Delete'}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
                     </div>
                   </div>
                 </div>

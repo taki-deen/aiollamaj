@@ -45,53 +45,148 @@ const parseCSV = (csvContent) => {
 
 const generateReport = async (data, prompt) => {
   try {
-    // Check if API key is properly configured
-    if (!process.env.HF_TOKEN || process.env.HF_TOKEN === 'your_huggingface_token_here') {
+    console.log('\n=== Generating Report ===');
+    console.log('User Prompt:', prompt);
+    console.log('Data Records:', data.length);
+    
+    const apiKey = process.env.GROQ_API_KEY || process.env.HF_TOKEN;
+    
+    if (!apiKey || apiKey === 'your_api_key_here' || apiKey === 'your_huggingface_token_here') {
       console.log('No valid API key found, using fallback analysis...');
       return generateFallbackReport(data, prompt);
     }
 
-    const dataString = JSON.stringify(data, null, 2);
-    const fullPrompt = `Based on the following data: ${dataString}\n\nPlease analyze this data and ${prompt}. Provide insights, patterns, and recommendations.`;
+    const dataSample = data.slice(0, 30);
+    const dataString = JSON.stringify(dataSample, null, 2);
+    
+    const userPrompt = prompt && prompt.trim() 
+      ? prompt.trim() 
+      : 'Provide comprehensive insights and analysis';
+    
+    console.log('Processed Prompt:', userPrompt);
+    
+    const fullPrompt = `You are a professional data analyst. I need you to focus SPECIFICALLY on the user's request below.
 
-    // Using Hugging Face Router API with Kimi model (Better performance)
-    const response = await axios.post(
-      'https://router.huggingface.co/v1/chat/completions',
-      {
-        model: 'moonshotai/Kimi-K2-Instruct-0905',
-        messages: [
-          {
-            role: 'user',
-            content: fullPrompt
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 2000
-      },
-      {
-        headers: {
-          'Authorization': `Bearer ${process.env.HF_TOKEN}`,
-          'Content-Type': 'application/json'
+CRITICAL REQUIREMENT: You MUST provide your entire response in BOTH Arabic and English. Start with Arabic, then provide the same content in English.
+
+User's Specific Request:
+"${userPrompt}"
+
+Dataset Information:
+- Total Records: ${data.length}
+- Sample (first ${dataSample.length} records):
+${dataString}
+
+Instructions:
+1. READ the user's request carefully
+2. Focus your analysis on answering their SPECIFIC question or request
+3. Use the dataset to support your analysis
+4. Provide detailed, relevant insights based on what they asked
+5. Include data-driven evidence from the dataset
+
+FORMAT REQUIREMENTS (MANDATORY):
+First, write the COMPLETE analysis in Arabic (العربية):
+- Use clear Arabic sections and headers
+- Include bullet points for readability
+- Provide specific numbers and statistics
+- Give direct answers to the user's request
+
+Then, write the EXACT SAME analysis in English:
+- Use clear English sections and headers
+- Include bullet points for readability
+- Provide specific numbers and statistics
+- Give direct answers to the user's request
+
+Example Structure:
+---
+# [Title in Arabic]
+## [Section 1 in Arabic]
+- [Point 1 in Arabic]
+- [Point 2 in Arabic]
+
+## [Section 2 in Arabic]
+...
+
+---
+# [Title in English]
+## [Section 1 in English]
+- [Point 1 in English]
+- [Point 2 in English]
+
+## [Section 2 in English]
+...
+
+Remember: Your response must be UNIQUE, SPECIFIC to the user's request, and provided in BOTH languages.`;
+
+    let response;
+    
+    if (process.env.GROQ_API_KEY) {
+      response = await axios.post(
+        'https://api.groq.com/openai/v1/chat/completions',
+        {
+          model: 'llama-3.3-70b-versatile',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an expert bilingual data analyst fluent in both Arabic and English. Your job is to: 1) Carefully read and understand the user\'s specific request, 2) Provide a detailed, customized analysis that directly addresses what they asked for, 3) ALWAYS provide your COMPLETE response in BOTH Arabic and English languages. Start with Arabic, then provide the same content in English. Each request is unique - never give generic responses. The bilingual requirement is MANDATORY - never skip either language.'
+            },
+            {
+              role: 'user',
+              content: fullPrompt
+            }
+          ],
+          temperature: 0.8,
+          max_tokens: 2500
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 30000
         }
-      }
-    );
-
-    // Extract the generated text from Hugging Face Router response
-    if (response.data && response.data.choices && response.data.choices[0] && response.data.choices[0].message) {
-      return response.data.choices[0].message.content;
+      );
     } else {
-      throw new Error('Invalid response from AI service');
+      response = await axios.post(
+        'https://api-inference.huggingface.co/models/mistralai/Mistral-7B-Instruct-v0.2',
+        {
+          inputs: fullPrompt,
+          parameters: {
+            max_new_tokens: 1500,
+            temperature: 0.7,
+            top_p: 0.9,
+            return_full_text: false
+          }
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${process.env.HF_TOKEN}`,
+            'Content-Type': 'application/json'
+          },
+          timeout: 30000
+        }
+      );
+    }
+
+    if (response.data) {
+      if (response.data.choices && response.data.choices[0] && response.data.choices[0].message) {
+        return response.data.choices[0].message.content;
+      } else if (Array.isArray(response.data) && response.data[0] && response.data[0].generated_text) {
+        return response.data[0].generated_text;
+      } else {
+        throw new Error('Invalid response from AI service');
+      }
+    } else {
+      throw new Error('Empty response from AI service');
     }
   } catch (error) {
-    console.error('AI generation error:', error);
+    console.error('AI generation error:', error.message);
     
-    // Fallback to a simple analysis if API fails
-    if (error.response?.status === 503 || error.response?.status === 429 || error.response?.status === 401) {
-      console.log('API error, using fallback analysis...');
-      return generateFallbackReport(data, prompt);
+    if (error.response) {
+      console.error('API Response Status:', error.response.status);
+      console.error('API Response Error:', error.response.data);
     }
     
-    // Always fallback on any error
     console.log('Using fallback analysis due to error...');
     return generateFallbackReport(data, prompt);
   }
@@ -182,26 +277,69 @@ const generateFallbackReport = (data, prompt) => {
   }
   
   return `
-# 📈 Data Analysis Report
+# 📈 تقرير تحليل البيانات / Data Analysis Report
 
-## 📋 Summary
+---
+## النسخة العربية
+
+### 📋 الملخص
+- **إجمالي السجلات**: ${dataLength}
+- **الأعمدة**: ${columns.join(', ')}
+- **طلب التحليل**: ${prompt}
+- **نوع التقرير**: تحليل إحصائي (AI API غير متاح)
+
+### 📊 الإحصائيات التفصيلية
+
+${statistics.map(stat => {
+  if (stat.type === 'numeric') {
+    return `#### ${stat.column} (رقمي)
+- **العدد**: ${stat.count} قيمة
+- **المتوسط**: ${stat.average}
+- **الوسيط**: ${stat.median}
+- **المدى**: من ${stat.min} إلى ${stat.max} (${stat.range})
+- **جودة البيانات**: ${stat.count === dataLength ? 'كاملة' : `${dataLength - stat.count} قيمة مفقودة`}`;
+  } else {
+    return `#### ${stat.column} (نصي)
+- **العدد**: ${stat.count} قيمة
+- **القيم الفريدة**: ${stat.unique}
+- **الأكثر شيوعاً**: "${stat.mostCommon}" (${stat.frequency} مرة)
+- **جودة البيانات**: ${stat.count === dataLength ? 'كاملة' : `${dataLength - stat.count} قيمة مفقودة`}`;
+  }
+}).join('\n\n')}
+
+### 🔍 الرؤى الأساسية
+
+${insights.map(insight => `- ${insight}`).join('\n')}
+
+### 💡 التوصيات
+
+1. **التحقق من البيانات**: ${missingData.length > 0 ? 'معالجة القيم المفقودة في الأعمدة المحددة' : 'البيانات كاملة - جودة جيدة!'}
+2. **التحليل الإحصائي**: ${numericColumns.length > 0 ? 'النظر في تحليل الارتباط بين المتغيرات الرقمية' : 'لا توجد بيانات رقمية للتحليل الإحصائي'}
+3. **التصنيف**: ${textColumns.length > 0 ? 'تجميع القيم النصية المتشابهة للحصول على رؤى أفضل' : 'لا توجد بيانات نصية للتصنيف'}
+4. **التصور البياني**: إنشاء مخططات ورسوم بيانية لتصور الأنماط
+5. **التحليل المتقدم**: ${numericColumns.length >= 2 ? 'النظر في تحليل الانحدار للعلاقات' : 'الحاجة إلى المزيد من المتغيرات الرقمية للتحليل المتقدم'}
+
+---
+## English Version
+
+### 📋 Summary
 - **Total Records**: ${dataLength}
 - **Columns**: ${columns.join(', ')}
 - **Analysis Request**: ${prompt}
 - **Report Type**: Statistical Analysis (AI API not available)
 
-## 📊 Detailed Statistics
+### 📊 Detailed Statistics
 
 ${statistics.map(stat => {
   if (stat.type === 'numeric') {
-    return `### ${stat.column} (Numeric)
+    return `#### ${stat.column} (Numeric)
 - **Count**: ${stat.count} values
 - **Average**: ${stat.average}
 - **Median**: ${stat.median}
 - **Range**: ${stat.min} to ${stat.max} (${stat.range})
 - **Data Quality**: ${stat.count === dataLength ? 'Complete' : `${dataLength - stat.count} missing values`}`;
   } else {
-    return `### ${stat.column} (Text)
+    return `#### ${stat.column} (Text)
 - **Count**: ${stat.count} values
 - **Unique Values**: ${stat.unique}
 - **Most Common**: "${stat.mostCommon}" (${stat.frequency} times)
@@ -209,11 +347,11 @@ ${statistics.map(stat => {
   }
 }).join('\n\n')}
 
-## 🔍 Key Insights
+### 🔍 Key Insights
 
 ${insights.map(insight => `- ${insight}`).join('\n')}
 
-## 💡 Recommendations
+### 💡 Recommendations
 
 1. **Data Validation**: ${missingData.length > 0 ? 'Address missing values in the identified columns' : 'Data appears complete - good quality!'}
 2. **Statistical Analysis**: ${numericColumns.length > 0 ? 'Consider correlation analysis between numeric variables' : 'No numeric data for statistical analysis'}
@@ -222,6 +360,7 @@ ${insights.map(insight => `- ${insight}`).join('\n')}
 5. **Advanced Analysis**: ${numericColumns.length >= 2 ? 'Consider regression analysis for relationships' : 'Need more numeric variables for advanced analysis'}
 
 ---
+*ملاحظة: هذا تحليل إحصائي آلي. للحصول على رؤى متقدمة مدعومة بالذكاء الاصطناعي، يرجى تكوين مفتاح API صالح في متغيرات البيئة.*
 *Note: This is an automated statistical analysis. For advanced AI-powered insights, please configure a valid API key in the environment variables.*
   `;
 };

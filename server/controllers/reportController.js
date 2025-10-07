@@ -274,6 +274,42 @@ const getAllReportsForAdmin = async (req, res) => {
   }
 };
 
+// Delete any report by admin
+const deleteReportByAdmin = async (req, res) => {
+  try {
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      });
+    }
+
+    const { reportId } = req.params;
+    
+    const report = await Report.findById(reportId);
+    if (!report) {
+      return res.status(404).json({
+        success: false,
+        message: 'Report not found'
+      });
+    }
+
+    await Report.findByIdAndDelete(reportId);
+    
+    res.json({
+      success: true,
+      message: 'Report deleted successfully'
+    });
+  } catch (error) {
+    console.error('Delete report by admin error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete report',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   uploadFile,
   generateAReport,
@@ -281,5 +317,6 @@ module.exports = {
   getReport,
   downloadReport,
   deleteReport,
-  getAllReportsForAdmin
+  getAllReportsForAdmin,
+  deleteReportByAdmin
 };
