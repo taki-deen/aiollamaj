@@ -459,20 +459,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
                           <div className="flex items-center space-x-3 mb-4 p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
                             <div className="w-12 h-12 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
                               {userId.avatarUrl && userId.avatarUrl.trim() !== '' ? (
-                                <>
-                                  <img 
-                                    src={`${API_ROOT}${userId.avatarUrl}`} 
-                                    alt={`${userId.firstName} ${userId.lastName}`}
-                                    className="w-full h-full object-cover absolute inset-0"
-                                    onError={(e) => {
-                                      const target = e.currentTarget as HTMLImageElement;
-                                      target.style.display = 'none';
-                                    }}
-                                  />
-                                  <span className="text-white text-base font-bold relative z-10">
-                                    {userId.firstName.charAt(0)}{userId.lastName.charAt(0)}
-                                  </span>
-                                </>
+                                <img 
+                                  src={`${API_ROOT}${userId.avatarUrl}`} 
+                                  alt={`${userId.firstName} ${userId.lastName}`}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    const target = e.currentTarget as HTMLImageElement;
+                                    target.style.display = 'none';
+                                    const parent = target.parentElement;
+                                    if (parent) {
+                                      const initials = document.createElement('span');
+                                      initials.className = 'text-white text-base font-bold';
+                                      initials.textContent = `${userId.firstName.charAt(0)}${userId.lastName.charAt(0)}`;
+                                      parent.appendChild(initials);
+                                    }
+                                  }}
+                                />
                               ) : (
                                 <span className="text-white text-base font-bold">
                                   {userId.firstName.charAt(0)}{userId.lastName.charAt(0)}
