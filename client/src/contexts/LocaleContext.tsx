@@ -322,7 +322,11 @@ export const LocaleProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     document.documentElement.dir = locale === 'ar' ? 'rtl' : 'ltr';
   }, [locale]);
 
-  const toggleLocale = () => setLocale(prev => (prev === 'ar' ? 'en' : 'ar'));
+  const toggleLocale = () => {
+    const newLocale = locale === 'ar' ? 'en' : 'ar';
+    console.log('Changing locale from', locale, 'to', newLocale);
+    setLocale(newLocale);
+  };
 
   const value = useMemo(() => ({
     locale,
