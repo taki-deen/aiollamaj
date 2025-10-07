@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { useTheme } from '../contexts/ThemeContext';
+import { useLocale } from '../contexts/LocaleContext';
 
-const Register = ({ onRegister, onSwitchToLogin }) => {
+const Register = ({ onRegister, onSwitchToLogin, onBack }) => {
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -12,6 +14,8 @@ const Register = ({ onRegister, onSwitchToLogin }) => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const { theme, toggleTheme } = useTheme();
+  const { locale, toggleLocale, t } = useLocale();
 
   const handleChange = (e) => {
     setFormData({
@@ -26,7 +30,7 @@ const Register = ({ onRegister, onSwitchToLogin }) => {
     setError('');
 
     if (formData.password !== formData.confirmPassword) {
-      setError('كلمات المرور غير متطابقة');
+      setError(t('passwordsNotMatch'));
       setLoading(false);
       return;
     }
@@ -40,38 +44,48 @@ const Register = ({ onRegister, onSwitchToLogin }) => {
         localStorage.setItem('user', JSON.stringify(response.data.data.user));
         onRegister(response.data.data.user);
       } else {
-        setError(response.data.message || 'Registration failed');
+        setError(response.data.message || t('registrationFailed'));
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Registration failed');
+      setError(err.response?.data?.message || t('registrationFailed'));
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-2xl w-full space-y-8">
-        <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-white/20">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 dark:from-slate-900 dark:via-slate-950 dark:to-black py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-2xl w-full space-y-6">
+        <div className="flex items-center justify-between">
+          <button onClick={onBack} className="px-4 py-2 rounded-lg bg-gradient-to-r from-gray-600 to-gray-700 text-white hover:from-gray-700 hover:to-gray-800">
+            <span className="flex items-center">
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+              {t ? t('back') : 'Back'}
+            </span>
+          </button>
+          <div className="flex items-center gap-2">
+            <button onClick={toggleLocale} className="px-3 py-2 text-sm rounded-lg bg-gradient-to-r from-slate-100 to-white text-slate-700 hover:shadow dark:from-slate-800 dark:to-slate-900 dark:text-slate-200">{locale === 'ar' ? 'EN' : 'AR'}</button>
+            <button onClick={toggleTheme} aria-label="Toggle theme" className="px-3 py-2 text-sm rounded-lg bg-gradient-to-r from-slate-100 to-white text-slate-700 hover:shadow dark:from-slate-800 dark:to-slate-900 dark:text-slate-200">{theme === 'dark' ? '☀️' : '🌙'}</button>
+          </div>
+        </div>
+        <div className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-white/20 dark:border-slate-700">
           <div className="text-center">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full mb-6">
               <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
               </svg>
             </div>
-            <h2 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-2">
-              إنشاء حساب جديد
-            </h2>
-            <p className="text-gray-600 mb-8">
-              انضم إلينا وابدأ رحلتك مع الذكاء الاصطناعي! 🚀
-            </p>
+            <h2 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent mb-2">{t('register')}</h2>
+            <p className="text-gray-600 dark:text-gray-300 mb-8">{t('joinUsMessage')} 🚀</p>
             <p className="text-sm text-gray-500">
-              لديك حساب بالفعل؟{' '}
+              {t('alreadyHaveAccount')}{' '}
               <button
                 onClick={onSwitchToLogin}
                 className="font-medium text-emerald-600 hover:text-emerald-500 transition-colors duration-200"
               >
-                تسجيل الدخول
+                {t('login')}
               </button>
             </p>
           </div>
@@ -80,8 +94,8 @@ const Register = ({ onRegister, onSwitchToLogin }) => {
             <div className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-2">
-                    الاسم الأول
+                  <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {t('firstName')}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -94,16 +108,16 @@ const Register = ({ onRegister, onSwitchToLogin }) => {
                       name="firstName"
                       type="text"
                       required
-                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200"
-                      placeholder="الاسم الأول"
+                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-xl placeholder-gray-500 text-gray-900 dark:text-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200"
+                      placeholder={t('firstName')}
                       value={formData.firstName}
                       onChange={handleChange}
                     />
                   </div>
                 </div>
                 <div>
-                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-2">
-                    اسم العائلة
+                  <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {t('lastName')}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -116,8 +130,8 @@ const Register = ({ onRegister, onSwitchToLogin }) => {
                       name="lastName"
                       type="text"
                       required
-                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200"
-                      placeholder="اسم العائلة"
+                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-xl placeholder-gray-500 text-gray-900 dark:text-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200"
+                      placeholder={t('lastName')}
                       value={formData.lastName}
                       onChange={handleChange}
                     />
@@ -126,8 +140,8 @@ const Register = ({ onRegister, onSwitchToLogin }) => {
               </div>
               
               <div>
-                <label htmlFor="username" className="block text-sm font-medium text-gray-700 mb-2">
-                  اسم المستخدم
+                <label htmlFor="username" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('username')}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -140,8 +154,8 @@ const Register = ({ onRegister, onSwitchToLogin }) => {
                     name="username"
                     type="text"
                     required
-                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200"
-                    placeholder="اسم المستخدم"
+                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-xl placeholder-gray-500 text-gray-900 dark:text-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200"
+                    placeholder={t('username')}
                     value={formData.username}
                     onChange={handleChange}
                   />
@@ -149,8 +163,8 @@ const Register = ({ onRegister, onSwitchToLogin }) => {
               </div>
               
               <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
-                  البريد الإلكتروني
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {t('email')}
                 </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -164,8 +178,8 @@ const Register = ({ onRegister, onSwitchToLogin }) => {
                     type="email"
                     autoComplete="email"
                     required
-                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200"
-                    placeholder="البريد الإلكتروني"
+                    className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-xl placeholder-gray-500 text-gray-900 dark:text-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200"
+                    placeholder={t('email')}
                     value={formData.email}
                     onChange={handleChange}
                   />
@@ -174,8 +188,8 @@ const Register = ({ onRegister, onSwitchToLogin }) => {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
-                    كلمة المرور
+                  <label htmlFor="password" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {t('password')}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -188,16 +202,16 @@ const Register = ({ onRegister, onSwitchToLogin }) => {
                       name="password"
                       type="password"
                       required
-                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200"
-                      placeholder="كلمة المرور"
+                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-xl placeholder-gray-500 text-gray-900 dark:text-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200"
+                      placeholder={t('password')}
                       value={formData.password}
                       onChange={handleChange}
                     />
                   </div>
                 </div>
                 <div>
-                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-2">
-                    تأكيد كلمة المرور
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {t('confirmPassword')}
                   </label>
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -210,8 +224,8 @@ const Register = ({ onRegister, onSwitchToLogin }) => {
                       name="confirmPassword"
                       type="password"
                       required
-                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-xl placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200"
-                      placeholder="تأكيد كلمة المرور"
+                      className="block w-full pl-10 pr-3 py-3 border border-gray-300 dark:border-gray-600 rounded-xl placeholder-gray-500 text-gray-900 dark:text-white dark:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 transition-all duration-200"
+                      placeholder={t('confirmPassword')}
                       value={formData.confirmPassword}
                       onChange={handleChange}
                     />
@@ -221,7 +235,7 @@ const Register = ({ onRegister, onSwitchToLogin }) => {
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
                 <div className="flex">
                   <div className="flex-shrink-0">
                     <svg className="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -229,7 +243,7 @@ const Register = ({ onRegister, onSwitchToLogin }) => {
                     </svg>
                   </div>
                   <div className="ml-3">
-                    <p className="text-sm text-red-800">{error}</p>
+                    <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
                   </div>
                 </div>
               </div>
@@ -248,14 +262,14 @@ const Register = ({ onRegister, onSwitchToLogin }) => {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                       </svg>
-                      جاري إنشاء الحساب...
+                      {t('creatingAccount')}
                     </>
                   ) : (
                     <>
                       <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
                       </svg>
-                      إنشاء حساب
+                      {t('register')}
                     </>
                   )}
                 </span>

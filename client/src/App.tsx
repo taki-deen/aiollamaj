@@ -91,6 +91,15 @@ function AppContent() {
     setCurrentReport(null);
   };
 
+  const handleBackToLanding = () => {
+    setShowLogin(false);
+    setShowRegister(false);
+    setShowUserReports(false);
+    setShowAdminDashboard(false);
+    setShowUserSettings(false);
+    setCurrentReport(null);
+  };
+
   const handleUserUpdate = (updatedUser: User) => {
     setUser(updatedUser);
   };
@@ -111,6 +120,7 @@ function AppContent() {
           setShowLogin(false);
           setShowRegister(true);
         }}
+        onBack={handleBackToLanding}
       />
     );
   }
@@ -123,6 +133,7 @@ function AppContent() {
           setShowRegister(false);
           setShowLogin(true);
         }}
+        onBack={handleBackToLanding}
       />
     );
   }
