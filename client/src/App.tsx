@@ -241,8 +241,10 @@ function AppContent() {
     );
   }
 
-  if (!user) {
-    return (
+  return (
+    <ThemeProvider>
+      <LocaleProvider>
+        {!user ? (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-slate-900 dark:via-slate-950 dark:to-black">
         <Header user={user} onLogout={handleLogout} />
         <div className="max-w-6xl mx-auto px-4 py-20">
@@ -310,12 +312,7 @@ function AppContent() {
           </div>
         </div>
       </div>
-    );
-  }
-
-  return (
-    <ThemeProvider>
-      <LocaleProvider>
+        ) : (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-950 dark:to-black">
           <Header user={user} onLogout={handleLogout} />
           
@@ -469,7 +466,7 @@ function AppContent() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                     </svg>
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-800">توليد التقرير</h3>
+                  <h3 className="text-2xl font-bold text-gray-800 dark:text-white">{t('generateReport')}</h3>
                 </div>
               <ReportGenerator 
                 reportId={currentReport._id}
@@ -491,7 +488,7 @@ function AppContent() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-800">التقرير المولد</h3>
+                  <h3 className="text-2xl font-bold text-gray-800 dark:text-white">{t('reportTitle')}</h3>
                 </div>
               <ReportDisplay 
                 report={currentReport}
@@ -516,6 +513,7 @@ function AppContent() {
         )}
       </main>
       </div>
+        )}
       </LocaleProvider>
     </ThemeProvider>
   );
