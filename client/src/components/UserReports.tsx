@@ -173,7 +173,7 @@ const UserReports: React.FC<UserReportsProps> = ({ user, onUploadNew }) => {
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
           <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-lg">
             <div className="flex items-center">
               <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900">
@@ -291,18 +291,20 @@ const UserReports: React.FC<UserReportsProps> = ({ user, onUploadNew }) => {
                 <div className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 mb-2">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white break-all mb-2 sm:mb-0">
                           {report.filename}
                         </h3>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(report.status)}`}>
-                          {getStatusText(report.status)}
-                        </span>
-                        {report.isPublic && (
-                          <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                            {locale === 'ar' ? 'عام' : 'Public'}
+                        <div className="flex flex-wrap gap-2">
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(report.status)}`}>
+                            {getStatusText(report.status)}
                           </span>
-                        )}
+                          {report.isPublic && (
+                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                              {locale === 'ar' ? 'عام' : 'Public'}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       
                       <div className="text-sm text-gray-600 dark:text-gray-300 mb-4">

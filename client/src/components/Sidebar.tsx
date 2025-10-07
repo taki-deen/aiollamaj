@@ -71,7 +71,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, user, currentView, o
 
       {/* Sidebar */}
       <div
-        className={`fixed top-0 ${locale === 'ar' ? 'right-0' : 'left-0'} h-full w-80 bg-white dark:bg-slate-800 shadow-2xl transform transition-transform duration-300 ease-in-out z-50 ${
+        className={`fixed top-0 ${locale === 'ar' ? 'right-0' : 'left-0'} h-full w-full sm:w-80 bg-white dark:bg-slate-800 shadow-2xl transform transition-transform duration-300 ease-in-out z-50 ${
           isOpen ? 'translate-x-0' : locale === 'ar' ? 'translate-x-full' : '-translate-x-full'
         }`}
       >
@@ -88,7 +88,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, user, currentView, o
               </svg>
             </button>
           </div>
-          <div className="flex items-center space-x-3">
+          <div className={`flex items-center ${locale === 'ar' ? 'space-x-reverse space-x-3' : 'space-x-3'}`}>
             {user?.avatarUrl ? (
               <img
                 src={`http://localhost:5000${user.avatarUrl}`}
@@ -110,7 +110,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, user, currentView, o
                 {user?.firstName?.charAt(0).toUpperCase()}
               </span>
             </div>
-            <div className="flex-1">
+            <div className={`flex-1 ${locale === 'ar' ? 'text-right' : 'text-left'}`}>
               <p className="font-bold text-lg">{user?.firstName} {user?.lastName}</p>
               <p className="text-sm text-indigo-100">{user?.email}</p>
               <p className="text-xs text-indigo-200 mt-1">
@@ -129,11 +129,11 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, user, currentView, o
                 onNavigate(item.id);
                 onClose();
               }}
-              className={`w-full flex items-center space-x-4 px-4 py-4 rounded-xl transition-all duration-200 ${
+              className={`w-full flex items-center ${locale === 'ar' ? 'space-x-reverse space-x-4' : 'space-x-4'} px-4 py-4 rounded-xl transition-all duration-200 ${
                 currentView === item.id
                   ? `bg-gradient-to-r ${item.color} text-white shadow-lg scale-105`
                   : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-700'
-              }`}
+              } ${locale === 'ar' ? 'flex-row-reverse' : ''}`}
             >
               <div className={`${currentView === item.id ? 'text-white' : 'text-gray-500 dark:text-gray-400'}`}>
                 {item.icon}

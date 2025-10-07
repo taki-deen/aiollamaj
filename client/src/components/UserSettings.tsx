@@ -224,10 +224,10 @@ const UserSettings: React.FC<UserSettingsProps> = ({ user, onBack, onUserUpdate 
 
         {/* Tabs */}
         <div className="mb-8">
-          <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
+          <div className="flex flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
             <button
               onClick={() => setActiveTab('profile')}
-              className={`flex-1 py-3 px-6 rounded-lg font-medium transition-all duration-200 ${
+              className={`flex-1 py-2 sm:py-3 px-4 sm:px-6 rounded-lg font-medium transition-all duration-200 text-sm sm:text-base ${
                 activeTab === 'profile'
                   ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' 
                   : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
@@ -242,7 +242,7 @@ const UserSettings: React.FC<UserSettingsProps> = ({ user, onBack, onUserUpdate 
             </button>
             <button
               onClick={() => setActiveTab('password')}
-              className={`flex-1 py-3 px-6 rounded-lg font-medium transition-all duration-200 ${
+              className={`flex-1 py-2 sm:py-3 px-4 sm:px-6 rounded-lg font-medium transition-all duration-200 text-sm sm:text-base ${
                 activeTab === 'password'
                   ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' 
                   : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'

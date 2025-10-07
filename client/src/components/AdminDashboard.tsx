@@ -16,6 +16,7 @@ interface User {
   role: string;
   createdAt: string;
   lastLogin?: string;
+  avatarUrl?: string;
 }
 
 interface Report {
@@ -41,10 +42,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
   const [error, setError] = useState('');
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterUser, setFilterUser] = useState<string>('all');
+  const [filterPublic, setFilterPublic] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'reports' | 'users' | 'ai-chat'>('reports');
   const { theme } = useTheme();
   const { locale, t } = useLocale();
+  
+  const API_ROOT = API_BASE.replace('/api', '');
 
   useEffect(() => {
     fetchAllReports();
@@ -147,12 +152,31 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
 
   const filteredReports = reports.filter(report => {
     const matchesStatus = filterStatus === 'all' || report.status === filterStatus;
+    const matchesUser = filterUser === 'all' || (report.userId && report.userId._id === filterUser);
+    const matchesPublic = filterPublic === 'all' || 
+      (filterPublic === 'public' && report.isPublic) ||
+      (filterPublic === 'private' && !report.isPublic);
     const matchesSearch = searchTerm === '' || 
       report.filename.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.userId?.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      report.userId?.email.toLowerCase().includes(searchTerm.toLowerCase());
-    return matchesStatus && matchesSearch;
+      (report.prompt && report.prompt.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (report.userId && (
+        report.userId.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        report.userId.lastName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        report.userId.username?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        report.userId.email?.toLowerCase().includes(searchTerm.toLowerCase())
+      ));
+    
+    return matchesStatus && matchesUser && matchesPublic && matchesSearch;
   });
+
+  // Get unique users for filter
+  const uniqueUsers = Array.from(
+    new Map(
+      reports
+        .filter(r => r.userId)
+        .map(r => [r.userId!._id, r.userId!])
+    ).values()
+  );
 
   const stats = {
     total: reports.length,
@@ -209,50 +233,53 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
 
         {/* Tabs */}
         <div className="mb-8">
-          <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
+          <div className="flex flex-col sm:flex-row space-y-1 sm:space-y-0 sm:space-x-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">
             <button
               onClick={() => setActiveTab('reports')}
-              className={`flex-1 py-3 px-6 rounded-lg font-medium transition-all duration-200 ${
+              className={`flex-1 py-2 sm:py-3 px-4 sm:px-6 rounded-lg font-medium transition-all duration-200 text-sm sm:text-base ${
                 activeTab === 'reports'
                   ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' 
                   : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
               <span className="flex items-center justify-center">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
-                {t('reportsTab')}
+                <span className="hidden sm:inline">{t('reportsTab')}</span>
+                <span className="sm:hidden">{locale === 'ar' ? 'تقارير' : 'Reports'}</span>
               </span>
             </button>
             <button
               onClick={() => setActiveTab('users')}
-              className={`flex-1 py-3 px-6 rounded-lg font-medium transition-all duration-200 ${
+              className={`flex-1 py-2 sm:py-3 px-4 sm:px-6 rounded-lg font-medium transition-all duration-200 text-sm sm:text-base ${
                 activeTab === 'users'
                   ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' 
                   : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
               <span className="flex items-center justify-center">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
                 </svg>
-                {t('usersTab')}
+                <span className="hidden sm:inline">{t('usersTab')}</span>
+                <span className="sm:hidden">{locale === 'ar' ? 'مستخدمين' : 'Users'}</span>
               </span>
             </button>
             <button
               onClick={() => setActiveTab('ai-chat')}
-              className={`flex-1 py-3 px-6 rounded-lg font-medium transition-all duration-200 ${
+              className={`flex-1 py-2 sm:py-3 px-4 sm:px-6 rounded-lg font-medium transition-all duration-200 text-sm sm:text-base ${
                 activeTab === 'ai-chat'
                   ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' 
                   : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
               }`}
             >
               <span className="flex items-center justify-center">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                 </svg>
-                {locale === 'ar' ? 'محادثة AI' : 'AI Chat'}
+                <span className="hidden sm:inline">{locale === 'ar' ? 'محادثة AI' : 'AI Chat'}</span>
+                <span className="sm:hidden">{locale === 'ar' ? 'AI' : 'AI'}</span>
               </span>
             </button>
           </div>
@@ -265,10 +292,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
         ) : (
         <>
         {/* Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-6 gap-6 mb-8">
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-lg">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-6 mb-8">
+          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 sm:p-6 shadow-lg">
             <div className="flex items-center">
-              <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900">
+              <div className="p-2 sm:p-3 rounded-full bg-blue-100 dark:bg-blue-900">
                 <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                 </svg>
@@ -365,8 +392,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
 
         {/* Filters */}
         <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-lg mb-8">
-          <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="lg:col-span-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {locale === 'ar' ? 'البحث' : 'Search'}
+              </label>
               <input
                 type="text"
                 placeholder={locale === 'ar' ? 'البحث في التقارير...' : 'Search reports...'}
@@ -376,16 +406,50 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
               />
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {locale === 'ar' ? 'الحالة' : 'Status'}
+              </label>
               <select
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
-                className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-700 dark:text-white"
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-700 dark:text-white"
               >
                 <option value="all">{locale === 'ar' ? 'جميع الحالات' : 'All Status'}</option>
                 <option value="completed">{locale === 'ar' ? 'مكتمل' : 'Completed'}</option>
                 <option value="processing">{locale === 'ar' ? 'قيد المعالجة' : 'Processing'}</option>
                 <option value="error">{locale === 'ar' ? 'خطأ' : 'Error'}</option>
                 <option value="pending">{locale === 'ar' ? 'في الانتظار' : 'Pending'}</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {locale === 'ar' ? 'المستخدم' : 'User'}
+              </label>
+              <select
+                value={filterUser}
+                onChange={(e) => setFilterUser(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-700 dark:text-white"
+              >
+                <option value="all">{locale === 'ar' ? 'جميع المستخدمين' : 'All Users'}</option>
+                {uniqueUsers.map(u => (
+                  <option key={u._id} value={u._id}>
+                    {u.firstName} {u.lastName} (@{u.username})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                {locale === 'ar' ? 'الخصوصية' : 'Privacy'}
+              </label>
+              <select
+                value={filterPublic}
+                onChange={(e) => setFilterPublic(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 dark:bg-slate-700 dark:text-white"
+              >
+                <option value="all">{locale === 'ar' ? 'الكل' : 'All'}</option>
+                <option value="public">{locale === 'ar' ? 'عام' : 'Public'}</option>
+                <option value="private">{locale === 'ar' ? 'خاص' : 'Private'}</option>
               </select>
             </div>
           </div>
@@ -431,62 +495,74 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
                 <div className="p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 mb-2">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white break-all">
                           {report.filename}
                         </h3>
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(report.status)}`}>
-                          {getStatusText(report.status)}
-                        </span>
-                        {report.isPublic && (
-                          <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                            {locale === 'ar' ? 'عام' : 'Public'}
+                        <div className="flex flex-wrap gap-2 mt-2 sm:mt-0">
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(report.status)}`}>
+                            {getStatusText(report.status)}
                           </span>
-                        )}
+                          {report.isPublic && (
+                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                              {locale === 'ar' ? 'عام' : 'Public'}
+                            </span>
+                          )}
+                        </div>
                       </div>
                       
-                      {/* User Info */}
-                      {report.userId && (
-                        <div className="bg-gray-50 dark:bg-slate-700 rounded-lg p-4 mb-4">
-                          <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            {locale === 'ar' ? 'معلومات المستخدم:' : 'User Information:'}
-                          </h4>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                            <div>
-                              <span className="font-medium text-gray-600 dark:text-gray-400">
-                                {locale === 'ar' ? 'الاسم:' : 'Name:'}
-                              </span> {report.userId.firstName} {report.userId.lastName}
+                      {/* User Info with Avatar */}
+                      {report.userId && (() => {
+                        const userId = report.userId;
+                        // Debug: Check avatar URL
+                        if (userId.avatarUrl) {
+                          console.log('Avatar URL for', userId.username, ':', userId.avatarUrl);
+                        } else {
+                          console.log('No avatar for', userId.username);
+                        }
+                        return (
+                          <div className="flex items-center space-x-3 mb-4 p-3 bg-gray-50 dark:bg-slate-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 flex items-center justify-center flex-shrink-0 overflow-hidden relative">
+                              {userId.avatarUrl && userId.avatarUrl.trim() !== '' ? (
+                                <>
+                                  <img 
+                                    src={`${API_ROOT}${userId.avatarUrl}`} 
+                                    alt={`${userId.firstName} ${userId.lastName}`}
+                                    className="w-full h-full object-cover absolute inset-0"
+                                    onError={(e) => {
+                                      const target = e.currentTarget as HTMLImageElement;
+                                      target.style.display = 'none';
+                                    }}
+                                  />
+                                  <span className="text-white text-base font-bold relative z-10">
+                                    {userId.firstName.charAt(0)}{userId.lastName.charAt(0)}
+                                  </span>
+                                </>
+                              ) : (
+                                <span className="text-white text-base font-bold">
+                                  {userId.firstName.charAt(0)}{userId.lastName.charAt(0)}
+                                </span>
+                              )}
                             </div>
-                            <div>
-                              <span className="font-medium text-gray-600 dark:text-gray-400">
-                                {locale === 'ar' ? 'اسم المستخدم:' : 'Username:'}
-                              </span> {report.userId.username}
-                            </div>
-                            <div>
-                              <span className="font-medium text-gray-600 dark:text-gray-400">
-                                {locale === 'ar' ? 'البريد:' : 'Email:'}
-                              </span> {report.userId.email}
-                            </div>
-                            <div>
-                              <span className="font-medium text-gray-600 dark:text-gray-400">
-                                {locale === 'ar' ? 'الدور:' : 'Role:'}
-                              </span> {report.userId.role}
-                            </div>
-                            <div>
-                              <span className="font-medium text-gray-600 dark:text-gray-400">
-                                {locale === 'ar' ? 'تاريخ التسجيل:' : 'Registered:'}
-                              </span> {formatDate(report.userId.createdAt)}
-                            </div>
-                            {report.userId.lastLogin && (
-                              <div>
-                                <span className="font-medium text-gray-600 dark:text-gray-400">
-                                  {locale === 'ar' ? 'آخر دخول:' : 'Last Login:'}
-                                </span> {formatDate(report.userId.lastLogin)}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center space-x-2">
+                                <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                                  {userId.firstName} {userId.lastName}
+                                </p>
+                                {userId.role === 'admin' && (
+                                  <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                                    {locale === 'ar' ? 'مدير' : 'Admin'}
+                                  </span>
+                                )}
                               </div>
-                            )}
+                              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                                @{userId.username} • {userId.email}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      )}
+                        );
+                      })()}
+
                       
                       <div className="text-sm text-gray-600 dark:text-gray-300 mb-4">
                         <p>
@@ -511,14 +587,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
                       </div>
                     </div>
                     
-                    <div className="flex space-x-2 ml-4">
+                    <div className="flex flex-wrap sm:flex-nowrap gap-2 mt-4 sm:mt-0 sm:ml-4 w-full sm:w-auto">
                       {report.generatedReport && (
                         <button
                           onClick={() => setSelectedReport(report)}
-                          className="px-4 py-2 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-800 transition-colors duration-200"
+                          className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300 rounded-lg hover:bg-indigo-200 dark:hover:bg-indigo-800 transition-colors duration-200"
                           title={locale === 'ar' ? 'عرض' : 'View'}
                         >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                           </svg>
@@ -528,10 +604,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
                       {report.status === 'completed' && (
                         <button
                           onClick={() => downloadPDF(report._id)}
-                          className="px-4 py-2 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-200 dark:hover:bg-green-800 transition-colors duration-200"
+                          className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-200 dark:hover:bg-green-800 transition-colors duration-200"
                           title={locale === 'ar' ? 'تحميل' : 'Download'}
                         >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <svg className="w-4 h-4 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                           </svg>
                         </button>
@@ -539,10 +615,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
                       
                       <button
                         onClick={() => deleteReportConfirm(report._id, report.filename)}
-                        className="px-4 py-2 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-200 dark:hover:bg-red-800 transition-colors duration-200"
+                        className="flex-1 sm:flex-none px-3 sm:px-4 py-2 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300 rounded-lg hover:bg-red-200 dark:hover:bg-red-800 transition-colors duration-200"
                         title={locale === 'ar' ? 'حذف' : 'Delete'}
                       >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg className="w-4 h-4 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
                       </button>
