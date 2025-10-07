@@ -1,7 +1,7 @@
 const XLSX = require('xlsx');
 const fs = require('fs-extra');
 const axios = require('axios');
-const PDFDocument = require('pdfkit');
+const htmlPdf = require('html-pdf-node');
 
 const processFile = async (filePath) => {
   try {
@@ -366,38 +366,184 @@ ${insights.map(insight => `- ${insight}`).join('\n')}
 };
 
 const generatePDF = async (report) => {
-  return new Promise((resolve, reject) => {
-    try {
-      const doc = new PDFDocument();
-      const chunks = [];
-
-      doc.on('data', chunk => chunks.push(chunk));
-      doc.on('end', () => resolve(Buffer.concat(chunks)));
-      doc.on('error', reject);
-
-      doc.fontSize(20).text('AI Generated Report', { align: 'center' });
-      doc.moveDown();
-      
-      doc.fontSize(16).text(`File: ${report.filename}`, { underline: true });
-      doc.moveDown();
-      
-      if (report.prompt) {
-        doc.fontSize(14).text('Prompt:', { underline: true });
-        doc.fontSize(12).text(report.prompt);
-        doc.moveDown();
-      }
-
-      doc.fontSize(14).text('Analysis:', { underline: true });
-      doc.fontSize(12).text(report.generatedReport, {
-        width: 500,
-        align: 'justify'
-      });
-
-      doc.end();
-    } catch (error) {
-      reject(error);
+  try {
+    const date = new Date(report.generatedAt || report.createdAt);
+    
+    // Convert markdown to HTML with proper Arabic support
+    let htmlContent = report.generatedReport
+      .replace(/#{6}\s(.+)/g, '<h6>$1</h6>')
+      .replace(/#{5}\s(.+)/g, '<h5>$1</h5>')
+      .replace(/#{4}\s(.+)/g, '<h4>$1</h4>')
+      .replace(/#{3}\s(.+)/g, '<h3>$1</h3>')
+      .replace(/#{2}\s(.+)/g, '<h2>$1</h2>')
+      .replace(/#{1}\s(.+)/g, '<h1>$1</h1>')
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      .replace(/^- (.+)/gm, '<li>$1</li>')
+      .replace(/\n\n/g, '</p><p>')
+      .replace(/\n/g, '<br>');
+    
+    // Wrap list items
+    htmlContent = htmlContent.replace(/(<li>.*<\/li>)/g, '<ul>$1</ul>');
+    
+    const html = `
+<!DOCTYPE html>
+<html dir="auto">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
     }
-  });
+    body {
+      font-family: 'Arial', 'Segoe UI', 'Tahoma', sans-serif;
+      padding: 40px;
+      background: white;
+      color: #333;
+      line-height: 1.6;
+      direction: ltr;
+    }
+    .header {
+      text-align: center;
+      border-bottom: 3px solid #4F46E5;
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      color: #4F46E5;
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    .header .subtitle {
+      color: #6B7280;
+      font-size: 18px;
+    }
+    .meta {
+      background: #F3F4F6;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 25px;
+      border-left: 4px solid #4F46E5;
+    }
+    .meta p {
+      margin: 5px 0;
+      font-size: 13px;
+      color: #374151;
+    }
+    .meta strong {
+      color: #1F2937;
+    }
+    .content {
+      padding: 20px 0;
+    }
+    h1 {
+      color: #1F2937;
+      font-size: 22px;
+      margin: 25px 0 15px 0;
+      border-bottom: 2px solid #E5E7EB;
+      padding-bottom: 8px;
+    }
+    h2 {
+      color: #374151;
+      font-size: 18px;
+      margin: 20px 0 12px 0;
+      border-bottom: 1px solid #E5E7EB;
+      padding-bottom: 5px;
+    }
+    h3 {
+      color: #4B5563;
+      font-size: 16px;
+      margin: 15px 0 10px 0;
+    }
+    h4 {
+      color: #6B7280;
+      font-size: 14px;
+      margin: 12px 0 8px 0;
+    }
+    p {
+      margin: 10px 0;
+      text-align: justify;
+      font-size: 12px;
+    }
+    ul {
+      margin: 10px 0 10px 20px;
+    }
+    li {
+      margin: 5px 0;
+      font-size: 12px;
+    }
+    strong {
+      color: #1F2937;
+      font-weight: 600;
+    }
+    .separator {
+      border-top: 1px dashed #D1D5DB;
+      margin: 20px 0;
+    }
+    .arabic-section {
+      direction: rtl;
+      text-align: right;
+    }
+    .english-section {
+      direction: ltr;
+      text-align: left;
+    }
+    .footer {
+      text-align: center;
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 2px solid #E5E7EB;
+      color: #6B7280;
+      font-size: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>تقرير تحليل البيانات | Data Analysis Report</h1>
+    <div class="subtitle">AI-Powered Insights</div>
+  </div>
+  
+  <div class="meta">
+    <p><strong>الملف | File:</strong> ${report.filename}</p>
+    ${report.prompt ? `<p><strong>الطلب | Request:</strong> ${report.prompt}</p>` : ''}
+    <p><strong>تاريخ التوليد | Generated:</strong> ${date.toLocaleString('ar-SA')} | ${date.toLocaleString('en-US')}</p>
+  </div>
+  
+  <div class="content">
+    ${htmlContent}
+  </div>
+  
+  <div class="footer">
+    <p>Powered by AI Report Generator System | مدعوم بنظام توليد التقارير الذكي</p>
+    <p>Generated with Groq Llama 3.3 70B | مولد بواسطة Groq Llama 3.3 70B</p>
+  </div>
+</body>
+</html>`;
+
+    const options = { 
+      format: 'A4',
+      margin: {
+        top: '20mm',
+        bottom: '20mm',
+        left: '15mm',
+        right: '15mm'
+      },
+      printBackground: true,
+      preferCSSPageSize: true
+    };
+
+    const file = { content: html };
+    const pdfBuffer = await htmlPdf.generatePdf(file, options);
+    
+    return pdfBuffer;
+    
+  } catch (error) {
+    console.error('PDF Generation Error:', error);
+    throw error;
+  }
 };
 
 module.exports = {
