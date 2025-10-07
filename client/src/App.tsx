@@ -9,6 +9,7 @@ import Header from './components/Header';
 import UserReports from './components/UserReports';
 import AdminDashboard from './components/AdminDashboard';
 import UserSettings from './components/UserSettings';
+import Sidebar from './components/Sidebar';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { LocaleProvider, useLocale } from './contexts/LocaleContext';
 
@@ -44,6 +45,8 @@ function AppContent() {
   const [showAdminDashboard, setShowAdminDashboard] = useState(false);
   const [showUserSettings, setShowUserSettings] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentView, setCurrentView] = useState('create');
   const { t, locale } = useLocale();
 
   useEffect(() => {
@@ -104,6 +107,32 @@ function AppContent() {
     setUser(updatedUser);
   };
 
+  const handleNavigation = (view: string) => {
+    setCurrentView(view);
+    switch (view) {
+      case 'create':
+        setShowUserReports(false);
+        setShowAdminDashboard(false);
+        setShowUserSettings(false);
+        break;
+      case 'reports':
+        setShowUserReports(true);
+        setShowAdminDashboard(false);
+        setShowUserSettings(false);
+        break;
+      case 'settings':
+        setShowUserReports(false);
+        setShowAdminDashboard(false);
+        setShowUserSettings(true);
+        break;
+      case 'admin':
+        setShowUserReports(false);
+        setShowAdminDashboard(true);
+        setShowUserSettings(false);
+        break;
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center dark:bg-slate-900">
@@ -140,28 +169,73 @@ function AppContent() {
 
   if (showUserSettings && user) {
     return (
-      <>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-950 dark:to-black">
         <Header user={user} onLogout={handleLogout} />
+        <Sidebar
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          user={user}
+          currentView="settings"
+          onNavigate={handleNavigation}
+        />
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="fixed top-20 left-4 z-30 p-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-110"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
         <UserSettings user={user} onBack={handleBackToMain} onUserUpdate={handleUserUpdate} />
-      </>
+      </div>
     );
   }
 
   if (showAdminDashboard && user && user.role === 'admin') {
     return (
-      <>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-950 dark:to-black">
         <Header user={user} onLogout={handleLogout} />
+        <Sidebar
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          user={user}
+          currentView="admin"
+          onNavigate={handleNavigation}
+        />
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="fixed top-20 left-4 z-30 p-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-110"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
         <AdminDashboard user={user} onBack={handleBackToMain} />
-      </>
+      </div>
     );
   }
 
   if (showUserReports && user) {
     return (
-      <>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-950 dark:to-black">
         <Header user={user} onLogout={handleLogout} />
+        <Sidebar
+          isOpen={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          user={user}
+          currentView="reports"
+          onNavigate={handleNavigation}
+        />
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="fixed top-20 left-4 z-30 p-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-110"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
         <UserReports user={user} onUploadNew={handleUploadNew} />
-      </>
+      </div>
     );
   }
 
@@ -242,8 +316,27 @@ function AppContent() {
       <LocaleProvider>
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-950 dark:to-black">
           <Header user={user} onLogout={handleLogout} />
+          
+          {/* Sidebar */}
+          <Sidebar
+            isOpen={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+            user={user}
+            currentView={currentView}
+            onNavigate={handleNavigation}
+          />
       
       <main className="max-w-7xl mx-auto px-4 py-12">
+        {/* Burger Menu Button */}
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="fixed top-20 left-4 z-30 p-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-110"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+
         {/* Navigation Tabs */}
         <div className="mb-8">
           <div className="flex space-x-1 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl">

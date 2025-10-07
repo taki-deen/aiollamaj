@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { register, login, getProfile, updateProfile, changePassword, getAllUsers, updateUserByAdmin, deleteUserByAdmin } = require('../controllers/authController');
+const { register, login, getProfile, updateProfile, changePassword, getAllUsers, updateUserByAdmin, deleteUserByAdmin, createUserByAdmin } = require('../controllers/authController');
 const { authenticate } = require('../middleware/auth');
 const multer = require('multer');
 const path = require('path');
@@ -56,6 +56,7 @@ router.post('/profile/avatar', authenticate, upload.single('avatar'), async (req
 
 // Admin routes
 router.get('/admin/users', authenticate, getAllUsers);
+router.post('/admin/users', authenticate, createUserByAdmin);
 router.put('/admin/users/:userId', authenticate, updateUserByAdmin);
 router.delete('/admin/users/:userId', authenticate, deleteUserByAdmin);
 

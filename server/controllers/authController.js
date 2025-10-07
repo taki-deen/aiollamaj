@@ -372,6 +372,65 @@ const deleteUserByAdmin = async (req, res) => {
   }
 };
 
+const createUserByAdmin = async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Admin access required'
+      });
+    }
+
+    const { username, email, password, firstName, lastName, role } = req.body;
+
+    if (!username || !email || !password || !firstName || !lastName) {
+      return res.status(400).json({
+        success: false,
+        message: 'All fields are required'
+      });
+    }
+
+    const existingUser = await User.findOne({
+      $or: [{ email }, { username }]
+    });
+
+    if (existingUser) {
+      return res.status(400).json({
+        success: false,
+        message: existingUser.email === email 
+          ? 'Email already registered' 
+          : 'Username already taken'
+      });
+    }
+
+    const user = new User({
+      username,
+      email,
+      password,
+      firstName,
+      lastName,
+      role: role || 'user'
+    });
+
+    await user.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'User created successfully',
+      data: {
+        user: user.toJSON()
+      }
+    });
+  } catch (error) {
+    console.error('Create user by admin error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to create user',
+      error: error.message
+    });
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -380,5 +439,6 @@ module.exports = {
   changePassword,
   getAllUsers,
   updateUserByAdmin,
-  deleteUserByAdmin
+  deleteUserByAdmin,
+  createUserByAdmin
 };
