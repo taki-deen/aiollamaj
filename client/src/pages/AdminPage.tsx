@@ -23,7 +23,7 @@ const AdminPage: React.FC<AdminPageProps> = ({ user }) => {
     return <Navigate to="/create" replace />;
   }
 
-  return <AdminDashboard user={user} />;
+  return <AdminDashboard user={user} onBack={() => {}} />;
 };
 
 export default AdminPage;

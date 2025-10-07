@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import FileUpload from '../components/FileUpload';
 import ReportGenerator from '../components/ReportGenerator';
 import ReportDisplay from '../components/ReportDisplay';
@@ -17,15 +16,49 @@ interface Report {
 
 const CreateReportPage: React.FC = () => {
   const [currentReport, setCurrentReport] = useState<Report | null>(null);
-  const { t, locale } = useLocale();
-  const navigate = useNavigate();
+  const { t } = useLocale();
 
-  const handleUploadSuccess = (report: Report) => {
-    setCurrentReport(report);
+  const handleUploadSuccess = (reportId: string) => {
+    // Fetch the report details or create a minimal report object
+    setCurrentReport({
+      _id: reportId,
+      filename: '',
+      status: 'pending',
+      createdAt: new Date().toISOString()
+    });
   };
 
   const handleReportGenerated = (updatedReport: Report) => {
     setCurrentReport(updatedReport);
+  };
+
+  const handleDownloadPDF = async () => {
+    if (!currentReport?._id) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      
+      const response = await fetch(`${API_BASE}/reports/${currentReport._id}/pdf`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `report-${currentReport._id}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      }
+    } catch (error) {
+      console.error('Error downloading PDF:', error);
+    }
   };
 
   return (
@@ -64,7 +97,7 @@ const CreateReportPage: React.FC = () => {
 
       {/* Right Column - Report Display */}
       <div>
-        {currentReport && currentReport.generatedReport ? (
+        {currentReport?.generatedReport ? (
           <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-8 shadow-2xl border border-white/20 sticky top-8">
             <div className="flex items-center mb-6">
               <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mr-4">
@@ -74,7 +107,7 @@ const CreateReportPage: React.FC = () => {
               </div>
               <h3 className="text-2xl font-bold text-gray-800 dark:text-white">{t('reportTitle')}</h3>
             </div>
-            <ReportDisplay report={currentReport} />
+            <ReportDisplay report={currentReport} onDownloadPDF={handleDownloadPDF} />
           </div>
         ) : (
           <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-12 shadow-2xl border border-white/20 text-center">
