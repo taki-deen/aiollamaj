@@ -1,5 +1,6 @@
 const Report = require('../models/Report');
 const { processFile, generateReport, generatePDF } = require('../services/reportService');
+const { sendReportByEmail } = require('../services/emailService');
 const { sendSuccess, sendError } = require('../utils/responseHelper');
 const { checkReportOwnership, checkAdminAccess, findReportById } = require('../utils/reportHelper');
 
@@ -189,12 +190,45 @@ const deleteReportByAdmin = async (req, res) => {
   }
 };
 
+// إرسال التقرير بالبريد الإلكتروني
+const emailReport = async (req, res) => {
+  try {
+    const { reportId } = req.params;
+    
+    if (!req.user) {
+      return sendError(res, 'Authentication required', 401);
+    }
+    
+    const report = await findReportById(reportId);
+    checkReportOwnership(report, req.user._id);
+    
+    if (!report.generatedReport) {
+      return sendError(res, 'Report not generated yet', 400);
+    }
+    
+    // توليد PDF
+    const pdfBuffer = await generatePDF(report);
+    
+    // إرسال بالبريد
+    await sendReportByEmail(req.user, report, pdfBuffer);
+    
+    sendSuccess(res, null, 'تم إرسال التقرير إلى بريدك الإلكتروني');
+    
+  } catch (error) {
+    console.error('Email report error:', error);
+    const statusCode = error.message.includes('not found') ? 404 : 
+                       error.message.includes('Access denied') ? 403 : 500;
+    sendError(res, error.message || 'Failed to email report', statusCode, error);
+  }
+};
+
 module.exports = {
   uploadFile,
   generateAReport,
   getAllReports,
   getReport,
   downloadReport,
+  emailReport,
   deleteReport,
   getAllReportsForAdmin,
   deleteReportByAdmin

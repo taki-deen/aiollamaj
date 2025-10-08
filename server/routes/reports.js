@@ -7,7 +7,8 @@ const {
   generateAReport, 
   getAllReports, 
   getReport, 
-  downloadReport, 
+  downloadReport,
+  emailReport,
   deleteReport,
   getAllReportsForAdmin,
   deleteReportByAdmin
@@ -58,6 +59,9 @@ router.get('/:reportId', optionalAuth, getReport);
 
 // Download report as PDF (optional authentication) - مع Rate Limiting
 router.get('/:reportId/download', downloadLimiter, optionalAuth, downloadReport);
+
+// Email report as PDF (requires authentication) - مع Rate Limiting
+router.post('/:reportId/email', downloadLimiter, authenticate, emailReport);
 
 // Delete report (optional authentication)
 router.delete('/:reportId', optionalAuth, deleteReport);

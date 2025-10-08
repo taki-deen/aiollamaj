@@ -65,6 +65,32 @@ const CreateReportPage: React.FC = () => {
     }
   };
 
+  const handleEmailPDF = async () => {
+    if (!currentReport?._id) return;
+    
+    try {
+      const token = localStorage.getItem('token');
+      const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      
+      const response = await fetch(`${API_BASE}/reports/${currentReport._id}/email`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        alert('✅ تم إرسال التقرير إلى بريدك الإلكتروني!');
+      } else {
+        const errorData = await response.json();
+        alert('❌ فشل الإرسال: ' + (errorData.message || 'حدث خطأ'));
+      }
+    } catch (error) {
+      console.error('Error emailing PDF:', error);
+      alert('❌ فشل الإرسال');
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
       {/* Left Column - Upload & Generate */}
@@ -111,7 +137,7 @@ const CreateReportPage: React.FC = () => {
               </div>
               <h3 className="text-2xl font-bold text-gray-800 dark:text-white">{t('reportTitle')}</h3>
             </div>
-            <ReportDisplay report={currentReport} onDownloadPDF={handleDownloadPDF} />
+            <ReportDisplay report={currentReport} onDownloadPDF={handleDownloadPDF} onEmailPDF={handleEmailPDF} />
           </div>
         ) : (
           <div className="bg-white/80 backdrop-blur-sm rounded-3xl p-12 shadow-2xl border border-white/20 text-center">

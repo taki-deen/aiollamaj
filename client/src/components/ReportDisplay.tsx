@@ -11,32 +11,50 @@ interface ReportDisplayProps {
     generatedAt?: string;
   };
   onDownloadPDF: () => void;
+  onEmailPDF?: () => void;
 }
 
-const ReportDisplay: React.FC<ReportDisplayProps> = ({ report, onDownloadPDF }) => {
+const ReportDisplay: React.FC<ReportDisplayProps> = ({ report, onDownloadPDF, onEmailPDF }) => {
   const { t, locale } = useLocale();
   
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
         <div>
           <h3 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-1">{t('reportTitle')}</h3>
           <p className="text-sm text-gray-500">
             {t('createdOn')} {new Date(report.generatedAt || report.createdAt).toLocaleDateString('en-US')}
           </p>
         </div>
-        <button
-          onClick={onDownloadPDF}
-          className="group relative px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-bold shadow-lg hover:shadow-purple-500/25 transition-all duration-300 hover:scale-105 hover:-translate-y-1"
-        >
-          <span className="relative z-10 flex items-center">
-            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            {t('downloadPDF')}
-          </span>
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-700 to-pink-700 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-        </button>
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <button
+            onClick={onDownloadPDF}
+            className="group relative px-4 sm:px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white rounded-xl font-bold shadow-lg hover:shadow-purple-500/25 transition-all duration-300 hover:scale-105"
+          >
+            <span className="relative z-10 flex items-center justify-center">
+              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              {t('downloadPDF')}
+            </span>
+            <div className="absolute inset-0 bg-gradient-to-r from-purple-700 to-pink-700 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          </button>
+          
+          {onEmailPDF && (
+            <button
+              onClick={onEmailPDF}
+              className="group relative px-4 sm:px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-xl font-bold shadow-lg hover:shadow-blue-500/25 transition-all duration-300 hover:scale-105"
+            >
+              <span className="relative z-10 flex items-center justify-center">
+                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                {locale === 'ar' ? 'إرسال بالإيميل' : 'Email PDF'}
+              </span>
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-700 to-cyan-700 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            </button>
+          )}
+        </div>
       </div>
 
       <div className="space-y-6">

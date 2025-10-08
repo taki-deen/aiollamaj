@@ -347,6 +347,117 @@ function generateOTP() {
 }
 
 /**
+ * إرسال التقرير بالبريد الإلكتروني مع PDF مرفق
+ */
+async function sendReportByEmail(user, report, pdfBuffer) {
+  try {
+    const reportLanguage = report.language || 'ar';
+    
+    const mailOptions = {
+      from: process.env.EMAIL_FROM,
+      to: user.email,
+      subject: reportLanguage === 'ar' 
+        ? `📊 تقريرك: ${report.filename}` 
+        : `📊 Your Report: ${report.filename}`,
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+        </head>
+        <body style="font-family: Arial, sans-serif; padding: 20px;">
+          <div style="max-width: 600px; margin: 0 auto;">
+            ${reportLanguage === 'ar' ? `
+            <!-- Arabic -->
+            <div dir="rtl" style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center;">
+              <h1>📊 تقريرك جاهز يا ${user.firstName}!</h1>
+            </div>
+            
+            <div dir="rtl" style="background: #f5f3ff; padding: 30px; border-radius: 0 0 8px 8px;">
+              <p>مرحباً ${user.firstName},</p>
+              <p>كما طلبت، إليك تقرير التحليل الخاص بك مرفقاً بهذا البريد الإلكتروني! 📎</p>
+              
+              <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-right: 4px solid #6366f1;">
+                <p><strong>📁 الملف:</strong> ${report.filename}</p>
+                ${report.prompt ? `<p><strong>💬 الطلب:</strong> ${report.prompt}</p>` : ''}
+                <p><strong>📅 تاريخ التوليد:</strong> ${new Date(report.generatedAt || report.createdAt).toLocaleDateString('ar-SA', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}</p>
+              </div>
+              
+              <div style="background: #dbeafe; border-right: 4px solid #3b82f6; padding: 15px; border-radius: 4px; margin: 20px 0;">
+                <p><strong>📎 المرفق:</strong></p>
+                <p>تجد التقرير الكامل بصيغة PDF مرفقاً مع هذا البريد.</p>
+              </div>
+              
+              <p style="color: #6b7280; font-size: 12px; margin-top: 20px;">
+                💡 نصيحة: يمكنك تحميل التقرير من حسابك في أي وقت!
+              </p>
+            </div>
+            ` : `
+            <!-- English -->
+            <div style="background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center;">
+              <h1>📊 Your Report is Ready, ${user.firstName}!</h1>
+            </div>
+            
+            <div style="background: #f5f3ff; padding: 30px; border-radius: 0 0 8px 8px;">
+              <p>Hello ${user.firstName},</p>
+              <p>As requested, here's your analysis report attached to this email! 📎</p>
+              
+              <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #6366f1;">
+                <p><strong>📁 File:</strong> ${report.filename}</p>
+                ${report.prompt ? `<p><strong>💬 Request:</strong> ${report.prompt}</p>` : ''}
+                <p><strong>📅 Generated:</strong> ${new Date(report.generatedAt || report.createdAt).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}</p>
+              </div>
+              
+              <div style="background: #dbeafe; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 4px; margin: 20px 0;">
+                <p><strong>📎 Attachment:</strong></p>
+                <p>You'll find the complete report in PDF format attached to this email.</p>
+              </div>
+              
+              <p style="color: #6b7280; font-size: 12px; margin-top: 20px;">
+                💡 Tip: You can download the report from your account anytime!
+              </p>
+            </div>
+            `}
+
+            <div style="text-align: center; color: #6b7280; font-size: 12px; margin-top: 30px;">
+              <p>© 2025 ${process.env.APP_NAME || 'AI Reports'}</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `,
+      attachments: [
+        {
+          filename: `${report.filename}_report.pdf`,
+          content: pdfBuffer,
+          contentType: 'application/pdf'
+        }
+      ]
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('✅ تم إرسال التقرير إلى:', user.email);
+    return info;
+    
+  } catch (error) {
+    console.error('❌ خطأ في إرسال التقرير بالإيميل:', error.message);
+    throw error;
+  }
+}
+
+/**
  * اختبار سريع (للتطوير فقط)
  */
 async function testEmail() {
@@ -377,6 +488,7 @@ module.exports = {
   sendVerificationEmail,
   sendVerificationOTP,
   sendReportGeneratedEmail,
+  sendReportByEmail,
   sendPasswordResetEmail,
   generateToken,
   generateOTP,
