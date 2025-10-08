@@ -10,6 +10,8 @@ const {
   updateUserByAdmin, 
   deleteUserByAdmin, 
   createUserByAdmin,
+  verifyEmailOTP,
+  resendOTP,
   verifyEmail,
   resendVerification,
   forgotPassword,
@@ -47,7 +49,11 @@ const upload = multer({ storage, fileFilter, limits: { fileSize: 5 * 1024 * 1024
 router.post('/register', authLimiter, register);
 router.post('/login', authLimiter, login);
 
-// Email verification routes
+// OTP verification routes
+router.post('/verify-otp', verifyEmailOTP);
+router.post('/resend-otp', resendOTP);
+
+// Email verification routes (للتوافق مع إعادة تعيين كلمة المرور)
 router.get('/verify-email/:token', verifyEmail);
 router.post('/resend-verification', authenticate, resendVerification);
 

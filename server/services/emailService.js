@@ -20,14 +20,14 @@ transporter.verify(function(error, success) {
 });
 
 /**
- * إرسال إيميل التحقق
+ * إرسال OTP للتحقق من البريد
  */
-async function sendVerificationEmail(user, verificationUrl) {
+async function sendVerificationOTP(user, otp) {
   try {
     const mailOptions = {
       from: process.env.EMAIL_FROM,
       to: user.email,
-      subject: '✅ تأكيد البريد الإلكتروني - Email Verification',
+      subject: '🔐 كود التحقق - Verification Code',
       html: `
         <!DOCTYPE html>
         <html>
@@ -84,24 +84,21 @@ async function sendVerificationEmail(user, verificationUrl) {
                 <p>شكراً لانضمامك إلى ${process.env.APP_NAME || 'AI Reports'}</p>
               </div>
               <div class="content">
-                <p>نحن سعداء بتسجيلك معنا! لإكمال التسجيل، يرجى تأكيد بريدك الإلكتروني.</p>
+                <p>نحن سعداء بتسجيلك معنا! لإكمال التسجيل، يرجى إدخال كود التحقق التالي:</p>
                 
                 <center>
-                  <a href="${verificationUrl}" class="button">
-                    ✅ تأكيد البريد الإلكتروني
-                  </a>
+                  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-size: 48px; font-weight: bold; letter-spacing: 10px; padding: 30px; border-radius: 12px; margin: 30px 0; font-family: 'Courier New', monospace;">
+                    ${otp}
+                  </div>
                 </center>
                 
-                <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">
-                  أو انسخ الرابط التالي في المتصفح:
-                </p>
-                <p style="word-break: break-all; background: #e5e7eb; padding: 10px; border-radius: 4px; font-size: 12px;">
-                  ${verificationUrl}
-                </p>
-                
                 <div class="warning-box">
-                  <strong>⚠️ ملاحظة:</strong>
-                  <p style="margin: 5px 0;">هذا الرابط صالح لمدة 24 ساعة فقط.</p>
+                  <strong>⚠️ ملاحظة مهمة:</strong>
+                  <ul style="margin: 10px 0; padding-right: 20px;">
+                    <li>هذا الكود صالح لمدة 10 دقائق فقط</li>
+                    <li>لا تشارك هذا الكود مع أي شخص</li>
+                    <li>إذا لم تطلب هذا الكود، يرجى تجاهل هذا البريد</li>
+                  </ul>
                 </div>
               </div>
             </div>
@@ -115,17 +112,21 @@ async function sendVerificationEmail(user, verificationUrl) {
                 <p>Thank you for joining ${process.env.APP_NAME || 'AI Reports'}</p>
               </div>
               <div class="content">
-                <p>We're excited to have you! To complete your registration, please verify your email address.</p>
+                <p>We're excited to have you! To complete your registration, please enter the following verification code:</p>
                 
                 <center>
-                  <a href="${verificationUrl}" class="button">
-                    ✅ Verify Email Address
-                  </a>
+                  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-size: 48px; font-weight: bold; letter-spacing: 10px; padding: 30px; border-radius: 12px; margin: 30px 0; font-family: 'Courier New', monospace;">
+                    ${otp}
+                  </div>
                 </center>
                 
                 <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px;">
-                  <strong>⚠️ Note:</strong>
-                  <p style="margin: 5px 0;">This link expires in 24 hours.</p>
+                  <strong>⚠️ Important Notes:</strong>
+                  <ul style="margin: 10px 0; padding-left: 20px;">
+                    <li>This code expires in 10 minutes</li>
+                    <li>Don't share this code with anyone</li>
+                    <li>If you didn't request this code, please ignore this email</li>
+                  </ul>
                 </div>
               </div>
             </div>
@@ -142,13 +143,22 @@ async function sendVerificationEmail(user, verificationUrl) {
     };
 
     const info = await transporter.sendMail(mailOptions);
-    console.log('✅ تم إرسال إيميل التحقق إلى:', user.email);
+    console.log('✅ تم إرسال OTP إلى:', user.email, '- الكود:', otp);
     return info;
     
   } catch (error) {
-    console.error('❌ خطأ في إرسال إيميل التحقق:', error.message);
+    console.error('❌ خطأ في إرسال OTP:', error.message);
     throw error;
   }
+}
+
+/**
+ * إرسال إيميل التحقق (للتوافق مع إعادة التعيين)
+ */
+async function sendVerificationEmail(user, verificationUrl) {
+  // هذه الدالة للتوافق مع نظام إعادة تعيين كلمة المرور
+  // يمكن حذفها إذا لم تكن مستخدمة
+  return sendVerificationOTP(user, '000000');
 }
 
 /**
@@ -330,6 +340,13 @@ function generateToken() {
 }
 
 /**
+ * توليد OTP (6 أرقام)
+ */
+function generateOTP() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+/**
  * اختبار سريع (للتطوير فقط)
  */
 async function testEmail() {
@@ -358,9 +375,11 @@ async function testEmail() {
 
 module.exports = {
   sendVerificationEmail,
+  sendVerificationOTP,
   sendReportGeneratedEmail,
   sendPasswordResetEmail,
   generateToken,
+  generateOTP,
   testEmail
 };
 

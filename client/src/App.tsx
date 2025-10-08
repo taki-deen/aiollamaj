@@ -11,6 +11,7 @@ import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 import AdminPage from './pages/AdminPage';
 import VerifyEmailPage from './pages/VerifyEmailPage';
+import VerifyOTPPage from './pages/VerifyOTPPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 
@@ -92,6 +93,7 @@ function App() {
           } />
 
           {/* Email Verification & Password Reset Routes */}
+          <Route path="/verify-otp" element={<VerifyOTPPage />} />
           <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password/:token" element={<ResetPasswordPage />} />

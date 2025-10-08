@@ -51,13 +51,14 @@ const userSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
-  // Email Verification
+  // Email Verification with OTP
   isEmailVerified: {
     type: Boolean,
     default: false
   },
-  emailVerificationToken: String,
+  emailVerificationOTP: String,
   emailVerificationExpires: Date,
+  emailVerificationToken: String, // للتوافق مع كود إعادة التعيين
   // Password Reset
   resetPasswordToken: String,
   resetPasswordExpires: Date,

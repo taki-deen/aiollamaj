@@ -21,9 +21,21 @@ interface RegisterPageProps {
 const RegisterPage: React.FC<RegisterPageProps> = ({ onRegister }) => {
   const navigate = useNavigate();
 
-  const handleRegister = (userData: User) => {
-    onRegister(userData);
-    navigate('/create');
+  const handleRegister = (userData: any) => {
+    // بعد التسجيل، نحول للـ OTP page بدلاً من تسجيل الدخول مباشرة
+    if (userData.userId && userData.email) {
+      // هذا من الـ response الجديد (userId + email)
+      navigate('/verify-otp', { 
+        state: { 
+          userId: userData.userId, 
+          email: userData.email 
+        } 
+      });
+    } else {
+      // للتوافق مع الكود القديم
+      onRegister(userData);
+      navigate('/create');
+    }
   };
 
   return (

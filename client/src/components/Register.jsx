@@ -40,9 +40,12 @@ const Register = ({ onRegister, onSwitchToLogin, onBack }) => {
       const response = await axios.post('http://localhost:5000/api/auth/register', registerData);
       
       if (response.data.success) {
-        localStorage.setItem('token', response.data.data.token);
-        localStorage.setItem('user', JSON.stringify(response.data.data.user));
-        onRegister(response.data.data.user);
+        // لا نحفظ token حتى يتم التحقق من OTP
+        // نرسل userId و email لصفحة OTP
+        onRegister({
+          userId: response.data.data.userId,
+          email: response.data.data.email
+        });
       } else {
         setError(response.data.message || t('registrationFailed'));
       }

@@ -3,9 +3,11 @@ const { generateToken } = require('../middleware/auth');
 const { sendSuccess, sendError } = require('../utils/responseHelper');
 const { checkUserExists, createUser } = require('../utils/userHelper');
 const { 
+  sendVerificationOTP,
   sendVerificationEmail, 
   sendPasswordResetEmail, 
-  generateToken: generateEmailToken 
+  generateToken: generateEmailToken,
+  generateOTP
 } = require('../services/emailService');
 const path = require('path');
 const fs = require('fs');
@@ -17,23 +19,21 @@ const register = async (req, res) => {
     
     const user = await createUser({ username, email, password, firstName, lastName });
     
-    // توليد token للتحقق من البريد
-    const verificationToken = generateEmailToken();
-    user.emailVerificationToken = verificationToken;
-    user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 ساعة
+    // توليد OTP للتحقق من البريد
+    const otp = generateOTP();
+    user.emailVerificationOTP = otp;
+    user.emailVerificationExpires = Date.now() + 10 * 60 * 1000; // 10 دقائق
     await user.save();
     
-    // إرسال إيميل التحقق
-    const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
-    await sendVerificationEmail(user, verificationUrl);
+    // إرسال OTP بالإيميل
+    await sendVerificationOTP(user, otp);
     
-    const token = generateToken(user._id);
-
+    // لا نعطي token حتى يتم التحقق من البريد
     sendSuccess(res, { 
-      user: user.toJSON(), 
-      token,
-      message: 'تم إرسال رابط التأكيد إلى بريدك الإلكتروني'
-    }, 'User registered successfully', 201);
+      userId: user._id,
+      email: user.email,
+      message: 'تم إرسال كود التحقق إلى بريدك الإلكتروني'
+    }, 'Verification code sent', 201);
   } catch (error) {
     console.error('Registration error:', error);
     sendError(res, error.message || 'Registration failed', 
@@ -380,7 +380,45 @@ const createUserByAdmin = async (req, res) => {
   }
 };
 
-// تأكيد البريد الإلكتروني
+// تأكيد البريد الإلكتروني بـ OTP
+const verifyEmailOTP = async (req, res) => {
+  try {
+    const { userId, otp } = req.body;
+    
+    if (!userId || !otp) {
+      return sendError(res, 'معرف المستخدم والكود مطلوبان', 400);
+    }
+    
+    const user = await User.findOne({
+      _id: userId,
+      emailVerificationOTP: otp,
+      emailVerificationExpires: { $gt: Date.now() }
+    });
+    
+    if (!user) {
+      return sendError(res, 'كود التحقق غير صحيح أو منتهي الصلاحية', 400);
+    }
+    
+    user.isEmailVerified = true;
+    user.emailVerificationOTP = undefined;
+    user.emailVerificationExpires = undefined;
+    await user.save();
+    
+    // الآن نعطي الـ token بعد التحقق
+    const token = generateToken(user._id);
+    
+    sendSuccess(res, { 
+      user: user.toJSON(), 
+      token 
+    }, 'تم تأكيد البريد الإلكتروني بنجاح');
+    
+  } catch (error) {
+    console.error('OTP verification error:', error);
+    sendError(res, 'Email verification failed', 500, error);
+  }
+};
+
+// تأكيد البريد الإلكتروني (للتوافق مع الروابط القديمة)
 const verifyEmail = async (req, res) => {
   try {
     const { token } = req.params;
@@ -407,7 +445,37 @@ const verifyEmail = async (req, res) => {
   }
 };
 
-// إعادة إرسال إيميل التحقق
+// إعادة إرسال OTP
+const resendOTP = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    
+    const user = await User.findById(userId);
+    
+    if (!user) {
+      return sendError(res, 'المستخدم غير موجود', 404);
+    }
+    
+    if (user.isEmailVerified) {
+      return sendError(res, 'البريد الإلكتروني مؤكد بالفعل', 400);
+    }
+    
+    const otp = generateOTP();
+    user.emailVerificationOTP = otp;
+    user.emailVerificationExpires = Date.now() + 10 * 60 * 1000; // 10 دقائق
+    await user.save();
+    
+    await sendVerificationOTP(user, otp);
+    
+    sendSuccess(res, null, 'تم إرسال كود التحقق مجدداً');
+    
+  } catch (error) {
+    console.error('Resend OTP error:', error);
+    sendError(res, 'Failed to resend OTP', 500, error);
+  }
+};
+
+// إعادة إرسال إيميل التحقق (للتوافق)
 const resendVerification = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
@@ -416,15 +484,14 @@ const resendVerification = async (req, res) => {
       return sendError(res, 'البريد الإلكتروني مؤكد بالفعل', 400);
     }
     
-    const verificationToken = generateEmailToken();
-    user.emailVerificationToken = verificationToken;
-    user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000;
+    const otp = generateOTP();
+    user.emailVerificationOTP = otp;
+    user.emailVerificationExpires = Date.now() + 10 * 60 * 1000;
     await user.save();
     
-    const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
-    await sendVerificationEmail(user, verificationUrl);
+    await sendVerificationOTP(user, otp);
     
-    sendSuccess(res, null, 'تم إرسال رابط التأكيد مجدداً');
+    sendSuccess(res, null, 'تم إرسال كود التحقق مجدداً');
     
   } catch (error) {
     console.error('Resend verification error:', error);
@@ -506,6 +573,8 @@ module.exports = {
   updateUserByAdmin,
   deleteUserByAdmin,
   createUserByAdmin,
+  verifyEmailOTP,
+  resendOTP,
   verifyEmail,
   resendVerification,
   forgotPassword,
