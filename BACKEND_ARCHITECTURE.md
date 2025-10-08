@@ -235,7 +235,7 @@ userSchema.index({ role: 1, isActive: 1 });
   generatedReport: String,          // التقرير المولد (Markdown)
   status: String,                   // pending | processing | completed | error
   userId: ObjectId (ref: 'User'),   // صاحب التقرير
-  isPublic: Boolean (default: false), // هل التقرير عام؟
+  isPublic: Boolean (default: true),  // هل التقرير عام؟ (افتراضياً عام)
   language: String,                 // لغة التقرير: 'ar' أو 'en'
   createdAt: Date (default: now),   // تاريخ الرفع
   generatedAt: Date                 // تاريخ التوليد
@@ -332,6 +332,8 @@ Content-Type: application/json
 | GET | `/api/reports/:id` | عرض تقرير واحد | اختيارية |
 | GET | `/api/reports/:id/download` | تحميل PDF | اختيارية |
 | POST | `/api/reports/:id/email` | إرسال PDF بالبريد | **مطلوبة** |
+| GET | `/api/reports/public` | جلب التقارير العامة (للمدونة) | عامة |
+| PATCH | `/api/reports/:id/toggle-public` | تبديل حالة عام/خاص | مطلوبة |
 | DELETE | `/api/reports/:id` | حذف تقرير | مطلوبة |
 
 **مثال - رفع ملف:**
@@ -1725,6 +1727,9 @@ curl -X POST http://localhost:5000/api/auth/register \
 - [x] **Responsive Design** (موبايل محسّن)
 - [x] **Multi-language Reports** (عربي/إنجليزي)
 - [x] **RTL/LTR PDF** (تنسيق حسب اللغة)
+- [x] **Blog System** (مدونة التقارير العامة)
+- [x] **SEO Optimization** (Schema.org، Meta Tags، Sitemap)
+- [x] **Public/Private Reports** (تبديل الحالة)
 
 ### 📋 في الخطة
 
@@ -1940,13 +1945,103 @@ curl -X POST http://localhost:5000/api/auth/register \
 
 ---
 
+## 🌐 Blog System (نظام المدونة)
+
+### المسارات:
+```
+GET /api/reports/public → جلب جميع التقارير العامة
+PATCH /api/reports/:id/toggle-public → تبديل حالة التقرير
+```
+
+### الميزات:
+- ✅ عرض التقارير العامة فقط (isPublic: true)
+- ✅ فلترة وبحث متقدم
+- ✅ ترتيب حسب التاريخ
+- ✅ معلومات الكاتب مع الصورة
+- ✅ تحميل PDF مباشر
+- ✅ مشاركة على وسائل التواصل
+
+### الصفحات:
+```
+/blog → قائمة جميع التقارير العامة
+/blog/:id → عرض تقرير فردي كامل
+```
+
+---
+
+## 🔍 SEO Optimization
+
+### تحسينات محركات البحث:
+
+#### **1. React Helmet Async:**
+```typescript
+<Helmet>
+  <title>عنوان محسّن SEO</title>
+  <meta name="description" content="وصف 160 حرف" />
+  <meta name="keywords" content="كلمات, مفتاحية" />
+</Helmet>
+```
+
+#### **2. Schema.org Structured Data:**
+```json
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "عنوان التقرير",
+  "author": { "@type": "Person", "name": "أحمد علي" },
+  "datePublished": "2025-10-08"
+}
+```
+
+#### **3. Open Graph Tags:**
+```html
+<meta property="og:title" content="..." />
+<meta property="og:description" content="..." />
+<meta property="og:image" content="..." />
+```
+
+#### **4. Twitter Cards:**
+```html
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="..." />
+```
+
+#### **5. Microdata في HTML:**
+```html
+<article itemScope itemType="https://schema.org/Article">
+  <h1 itemProp="headline">...</h1>
+  <span itemProp="author">...</span>
+  <time itemProp="datePublished">...</time>
+</article>
+```
+
+#### **6. ملفات SEO:**
+- ✅ `robots.txt` - السماح/المنع لمحركات البحث
+- ✅ `sitemap.xml` - خريطة الموقع
+- ✅ `manifest.json` - معلومات التطبيق
+
+### AI Prompts محسّنة للـ SEO:
+```javascript
+// System Message:
+"أنت محلل بيانات محترف وكاتب محتوى SEO"
+
+// المخرجات:
+- عناوين واضحة (H1, H2, H3)
+- جداول markdown منظمة
+- نقاط رئيسية مع أرقام
+- نص عريض للأرقام المهمة
+- هيكل صديق لمحركات البحث
+```
+
+---
+
 **آخر تحديث:** 8 أكتوبر 2025
 
-**الإصدار:** 3.0
+**الإصدار:** 4.0
 
 **الحالة:** ✅ قيد الإنتاج والتشغيل
 
-**الميزات الجديدة:** OTP Email Verification, Password Reset, Multi-language Reports, Email Reports, Rate Limiting, React Router
+**الميزات الجديدة:** Blog System, SEO Optimization, Public/Private Reports, Schema.org, Social Media Integration
 
 ---
 
