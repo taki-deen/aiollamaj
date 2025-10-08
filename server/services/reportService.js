@@ -353,26 +353,45 @@ const generatePDF = async (report) => {
   try {
     const date = new Date(report.generatedAt || report.createdAt);
     
-    // Convert markdown to HTML with proper Arabic support
-    let htmlContent = report.generatedReport
-      .replace(/#{6}\s(.+)/g, '<h6>$1</h6>')
-      .replace(/#{5}\s(.+)/g, '<h5>$1</h5>')
-      .replace(/#{4}\s(.+)/g, '<h4>$1</h4>')
-      .replace(/#{3}\s(.+)/g, '<h3>$1</h3>')
-      .replace(/#{2}\s(.+)/g, '<h2>$1</h2>')
-      .replace(/#{1}\s(.+)/g, '<h1>$1</h1>')
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      .replace(/^- (.+)/gm, '<li>$1</li>')
-      .replace(/\n\n/g, '</p><p>')
-      .replace(/\n/g, '<br>');
+    // تقسيم المحتوى إلى قسم عربي وإنجليزي
+    const reportText = report.generatedReport;
+    const parts = reportText.split(/---+/); // فاصل بين العربي والإنجليزي
     
-    // Wrap list items
-    htmlContent = htmlContent.replace(/(<li>.*<\/li>)/g, '<ul>$1</ul>');
+    // دالة لتحويل Markdown إلى HTML
+    const convertMarkdown = (text) => {
+      return text
+        .replace(/#{6}\s(.+)/g, '<h6>$1</h6>')
+        .replace(/#{5}\s(.+)/g, '<h5>$1</h5>')
+        .replace(/#{4}\s(.+)/g, '<h4>$1</h4>')
+        .replace(/#{3}\s(.+)/g, '<h3>$1</h3>')
+        .replace(/#{2}\s(.+)/g, '<h2>$1</h2>')
+        .replace(/#{1}\s(.+)/g, '<h1>$1</h1>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        .replace(/^- (.+)/gm, '<li>$1</li>')
+        .replace(/\n\n/g, '</p><p>')
+        .replace(/\n/g, '<br>')
+        .replace(/(<li>.*?<\/li>)/g, '<ul>$1</ul>');
+    };
+    
+    // تحديد القسم العربي والإنجليزي
+    let arabicContent = '';
+    let englishContent = '';
+    
+    if (parts.length > 1) {
+      // يوجد فاصل - القسم الأول عربي والثاني إنجليزي
+      arabicContent = convertMarkdown(parts[0].trim());
+      englishContent = convertMarkdown(parts[1].trim());
+    } else {
+      // لا يوجد فاصل - نضع الكل في القسمين
+      const converted = convertMarkdown(reportText);
+      arabicContent = converted;
+      englishContent = converted;
+    }
     
     const html = `
 <!DOCTYPE html>
-<html dir="auto">
+<html>
 <head>
   <meta charset="UTF-8">
   <style>
@@ -386,8 +405,19 @@ const generatePDF = async (report) => {
       padding: 40px;
       background: white;
       color: #333;
-      line-height: 1.6;
+      line-height: 1.8;
+    }
+    /* قسم عربي - RTL */
+    .arabic-section {
+      direction: rtl;
+      text-align: right;
+      margin-bottom: 50px;
+      page-break-after: always;
+    }
+    /* قسم إنجليزي - LTR */
+    .english-section {
       direction: ltr;
+      text-align: left;
     }
     .header {
       text-align: center;
@@ -441,38 +471,44 @@ const generatePDF = async (report) => {
       font-size: 16px;
       margin: 15px 0 10px 0;
     }
-    h4 {
+    h4, h5, h6 {
       color: #6B7280;
       font-size: 14px;
       margin: 12px 0 8px 0;
     }
     p {
       margin: 10px 0;
-      text-align: justify;
       font-size: 12px;
     }
-    ul {
-      margin: 10px 0 10px 20px;
+    /* القوائم في العربي */
+    .arabic-section ul {
+      margin: 10px 30px 10px 0;
+      padding-right: 20px;
+      list-style-position: inside;
     }
-    li {
+    .arabic-section li {
       margin: 5px 0;
       font-size: 12px;
+      text-align: right;
+    }
+    /* القوائم في الإنجليزي */
+    .english-section ul {
+      margin: 10px 0 10px 30px;
+      padding-left: 20px;
+      list-style-position: inside;
+    }
+    .english-section li {
+      margin: 5px 0;
+      font-size: 12px;
+      text-align: left;
     }
     strong {
       color: #1F2937;
       font-weight: 600;
     }
-    .separator {
-      border-top: 1px dashed #D1D5DB;
-      margin: 20px 0;
-    }
-    .arabic-section {
-      direction: rtl;
-      text-align: right;
-    }
-    .english-section {
-      direction: ltr;
-      text-align: left;
+    em {
+      font-style: italic;
+      color: #4B5563;
     }
     .footer {
       text-align: center;
@@ -487,22 +523,52 @@ const generatePDF = async (report) => {
 <body>
   <div class="header">
     <h1>تقرير تحليل البيانات | Data Analysis Report</h1>
-    <div class="subtitle">AI-Powered Insights</div>
+    <div class="subtitle">AI-Powered Insights | رؤى مدعومة بالذكاء الاصطناعي</div>
   </div>
   
-  <div class="meta">
-    <p><strong>الملف | File:</strong> ${report.filename}</p>
-    ${report.prompt ? `<p><strong>الطلب | Request:</strong> ${report.prompt}</p>` : ''}
-    <p><strong>تاريخ التوليد | Generated:</strong> ${date.toLocaleString('ar-SA')} | ${date.toLocaleString('en-US')}</p>
+  <div class="meta" style="direction: rtl; text-align: right;">
+    <p><strong>الملف:</strong> ${report.filename}</p>
+    ${report.prompt ? `<p><strong>الطلب:</strong> ${report.prompt}</p>` : ''}
+    <p><strong>تاريخ التوليد:</strong> ${date.toLocaleString('ar-SA', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })}</p>
   </div>
   
-  <div class="content">
-    ${htmlContent}
+  <!-- القسم العربي -->
+  <div class="arabic-section">
+    <div class="content">
+      ${arabicContent}
+    </div>
+  </div>
+  
+  <!-- فاصل بين القسمين -->
+  <div style="page-break-before: always;"></div>
+  
+  <!-- القسم الإنجليزي -->
+  <div class="english-section">
+    <div class="meta" style="direction: ltr; text-align: left; border-left: none; border-right: 4px solid #4F46E5;">
+      <p><strong>File:</strong> ${report.filename}</p>
+      ${report.prompt ? `<p><strong>Request:</strong> ${report.prompt}</p>` : ''}
+      <p><strong>Generated:</strong> ${date.toLocaleString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })}</p>
+    </div>
+    <div class="content">
+      ${englishContent}
+    </div>
   </div>
   
   <div class="footer">
-    <p>Powered by AI Report Generator System | مدعوم بنظام توليد التقارير الذكي</p>
-    <p>Generated with Groq Llama 3.3 70B | مولد بواسطة Groq Llama 3.3 70B</p>
+    <p>مدعوم بنظام توليد التقارير الذكي | Powered by AI Report Generator System</p>
+    <p>مولد بواسطة Groq Llama 3.3 70B | Generated with Groq Llama 3.3 70B</p>
   </div>
 </body>
 </html>`;
