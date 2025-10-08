@@ -74,6 +74,32 @@ const UserReports: React.FC<UserReportsProps> = ({ user, onUploadNew }) => {
     }
   };
 
+  const togglePublicStatus = async (reportId: string, currentStatus: boolean) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.patch(
+        `${API_BASE}/reports/${reportId}/toggle-public`,
+        { isPublic: !currentStatus },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      if (response.data.success) {
+        setReports(reports.map(r => 
+          r._id === reportId ? { ...r, isPublic: !currentStatus } : r
+        ));
+        
+        const message = !currentStatus
+          ? (locale === 'ar' ? '✅ التقرير أصبح عاماً وسيظهر في المدونة' : '✅ Report is now public and will appear in the blog')
+          : (locale === 'ar' ? '🔒 التقرير أصبح خاصاً' : '🔒 Report is now private');
+        
+        alert(message);
+      }
+    } catch (err: any) {
+      setError(err.response?.data?.message || (locale === 'ar' ? 'فشل تغيير حالة التقرير' : 'Failed to change report status'));
+      console.error('Toggle public error:', err);
+    }
+  };
+
   const deleteReportConfirm = async (reportId: string, filename: string) => {
     const confirmMessage = locale === 'ar' 
       ? `هل أنت متأكد من حذف التقرير "${filename}"؟` 
@@ -272,11 +298,16 @@ const UserReports: React.FC<UserReportsProps> = ({ user, onUploadNew }) => {
                           <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(report.status)}`}>
                             {getStatusText(report.status, locale)}
                           </span>
-                          {report.isPublic && (
-                            <span className="px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                              {locale === 'ar' ? 'عام' : 'Public'}
-                            </span>
-                          )}
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
+                            report.isPublic 
+                              ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
+                              : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-200'
+                          }`}>
+                            {report.isPublic 
+                              ? (locale === 'ar' ? '🌍 عام' : '🌍 Public')
+                              : (locale === 'ar' ? '🔒 خاص' : '🔒 Private')
+                            }
+                          </span>
                         </div>
                       </div>
                       
@@ -317,15 +348,40 @@ const UserReports: React.FC<UserReportsProps> = ({ user, onUploadNew }) => {
                       )}
                       
                       {report.status === 'completed' && (
-                        <button
-                          onClick={() => downloadPDF(report._id)}
-                          className="px-4 py-2 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-200 dark:hover:bg-green-800 transition-colors duration-200"
-                          title={locale === 'ar' ? 'تحميل' : 'Download'}
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                        </button>
+                        <>
+                          <button
+                            onClick={() => downloadPDF(report._id)}
+                            className="px-4 py-2 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-200 dark:hover:bg-green-800 transition-colors duration-200"
+                            title={locale === 'ar' ? 'تحميل' : 'Download'}
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                            </svg>
+                          </button>
+                          
+                          <button
+                            onClick={() => togglePublicStatus(report._id, report.isPublic)}
+                            className={`px-4 py-2 rounded-lg transition-colors duration-200 ${
+                              report.isPublic
+                                ? 'bg-orange-100 dark:bg-orange-900 text-orange-700 dark:text-orange-300 hover:bg-orange-200 dark:hover:bg-orange-800'
+                                : 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800'
+                            }`}
+                            title={report.isPublic 
+                              ? (locale === 'ar' ? 'جعله خاصاً' : 'Make Private')
+                              : (locale === 'ar' ? 'جعله عاماً' : 'Make Public')
+                            }
+                          >
+                            {report.isPublic ? (
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                              </svg>
+                            ) : (
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                            )}
+                          </button>
+                        </>
                       )}
                       
                       <button
