@@ -38,8 +38,9 @@ const Register = ({ onRegister, onSwitchToLogin, onBack }) => {
     }
 
     try {
+      const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
       const { confirmPassword, ...registerData } = formData;
-      const response = await axios.post('http://localhost:5000/api/auth/register', registerData);
+      const response = await axios.post(`${API_BASE}/auth/register`, registerData);
       
       if (response.data.success) {
         // لا نحفظ token حتى يتم التحقق من OTP

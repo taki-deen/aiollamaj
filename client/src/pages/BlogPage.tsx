@@ -62,7 +62,8 @@ const BlogPage: React.FC = () => {
 
   const fetchPublicReports = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/reports/public');
+      const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await axios.get(`${API_BASE}/reports/public`);
       setReports(response.data.data);
     } catch (error) {
       console.error('Error fetching public reports:', error);
@@ -159,8 +160,8 @@ const BlogPage: React.FC = () => {
           : 'Browse hundreds of professional AI-generated reports across various domains'
         } />
         <meta property="og:type" content="website" />
-        <meta property="og:url" content="http://localhost:3000/blog" />
-        <meta property="og:image" content="http://localhost:3000/logo512.png" />
+        <meta property="og:url" content={`${window.location.origin}/blog`} />
+        <meta property="og:image" content={`${window.location.origin}/logo512.png`} />
         
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={locale === 'ar' ? 'مدونة التقارير' : 'Reports Blog'} />
@@ -171,7 +172,7 @@ const BlogPage: React.FC = () => {
         
         <meta name="robots" content="index, follow" />
         <meta name="author" content="AI Reports" />
-        <link rel="canonical" href="http://localhost:3000/blog" />
+        <link rel="canonical" href={`${window.location.origin}/blog`} />
         
         <script type="application/ld+json">
           {JSON.stringify(generateBlogSchema(filteredReports.length))}
@@ -319,7 +320,7 @@ const BlogPage: React.FC = () => {
                   <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
                     {report.userId?.avatarUrl ? (
                       <img
-                        src={`http://localhost:5000${report.userId.avatarUrl}`}
+                        src={`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5000'}${report.userId.avatarUrl}`}
                         alt={`${report.userId.firstName} ${report.userId.lastName}`}
                         className="w-12 h-12 rounded-full object-cover border-2 border-blue-200 dark:border-blue-700 shadow-md"
                       />
@@ -348,8 +349,8 @@ const BlogPage: React.FC = () => {
                   <p className="text-gray-600 dark:text-gray-300 mb-4 line-clamp-3 text-sm" itemProp="description">
                     {getExcerpt(report.generatedReport)}
                   </p>
-                  <meta itemProp="url" content={`http://localhost:3000/blog/${report._id}`} />
-                  <meta itemProp="image" content={report.userId?.avatarUrl ? `http://localhost:5000${report.userId.avatarUrl}` : 'http://localhost:3000/logo512.png'} />
+                  <meta itemProp="url" content={`${window.location.origin}/blog/${report._id}`} />
+                  <meta itemProp="image" content={report.userId?.avatarUrl ? `${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5000'}${report.userId.avatarUrl}` : `${window.location.origin}/logo512.png`} />
 
                   {/* Prompt */}
                   {report.prompt && (
@@ -379,8 +380,9 @@ const BlogPage: React.FC = () => {
                       onClick={async (e) => {
                         e.stopPropagation();
                         try {
+                          const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
                           const response = await axios.get(
-                            `http://localhost:5000/api/reports/${report._id}/download`,
+                            `${API_BASE}/reports/${report._id}/download`,
                             { responseType: 'blob' }
                           );
                           const url = window.URL.createObjectURL(new Blob([response.data]));

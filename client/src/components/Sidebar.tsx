@@ -105,7 +105,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose, user, currentView, o
           <div className={`flex items-center ${locale === 'ar' ? 'space-x-reverse space-x-3' : 'space-x-3'}`}>
             {user?.avatarUrl ? (
               <img
-                src={`http://localhost:5000${user.avatarUrl}`}
+                src={`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5000'}${user.avatarUrl}`}
                 alt={user.firstName}
                 className="w-16 h-16 rounded-full border-4 border-white/30 object-cover shadow-lg"
                 onError={(e) => {

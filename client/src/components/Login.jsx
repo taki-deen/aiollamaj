@@ -27,7 +27,8 @@ const Login = ({ onLogin, onSwitchToRegister, onBack }) => {
     setError('');
 
     try {
-      const response = await axios.post('http://localhost:5000/api/auth/login', formData);
+      const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await axios.post(`${API_BASE}/auth/login`, formData);
       
       if (response.data.success) {
         localStorage.setItem('token', response.data.data.token);

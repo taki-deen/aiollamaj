@@ -70,7 +70,8 @@ const BlogPostPage: React.FC = () => {
 
   const fetchReport = async (id: string) => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/reports/${id}`);
+      const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await axios.get(`${API_BASE}/reports/${id}`);
       const reportData = response.data.success ? response.data.data : response.data;
       
       if (!reportData.userId) {
@@ -94,8 +95,9 @@ const BlogPostPage: React.FC = () => {
   const handleDownloadPDF = async () => {
     if (!report) return;
     try {
+      const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
       const response = await axios.get(
-        `http://localhost:5000/api/reports/${report._id}/download`,
+        `${API_BASE}/reports/${report._id}/download`,
         { responseType: 'blob' }
       );
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -206,8 +208,8 @@ const BlogPostPage: React.FC = () => {
         <meta property="og:title" content={report.filename} />
         <meta property="og:description" content={getExcerpt(report.generatedReport)} />
         <meta property="og:type" content="article" />
-        <meta property="og:url" content={`http://localhost:3000/blog/${report._id}`} />
-        <meta property="og:image" content={report.userId?.avatarUrl ? `http://localhost:5000${report.userId.avatarUrl}` : 'http://localhost:3000/logo512.png'} />
+        <meta property="og:url" content={`${window.location.origin}/blog/${report._id}`} />
+        <meta property="og:image" content={report.userId?.avatarUrl ? `${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5000'}${report.userId.avatarUrl}` : `${window.location.origin}/logo512.png`} />
         <meta property="article:published_time" content={report.generatedAt || report.createdAt} />
         <meta property="article:author" content={`${report.userId?.firstName || ''} ${report.userId?.lastName || ''}`} />
         <meta property="article:tag" content={report.language === 'ar' ? 'عربي' : 'English'} />
@@ -215,10 +217,10 @@ const BlogPostPage: React.FC = () => {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:title" content={report.filename} />
         <meta name="twitter:description" content={getExcerpt(report.generatedReport)} />
-        <meta name="twitter:image" content={report.userId?.avatarUrl ? `http://localhost:5000${report.userId.avatarUrl}` : 'http://localhost:3000/logo512.png'} />
+        <meta name="twitter:image" content={report.userId?.avatarUrl ? `${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5000'}${report.userId.avatarUrl}` : `${window.location.origin}/logo512.png`} />
         
         <meta name="robots" content="index, follow" />
-        <link rel="canonical" href={`http://localhost:3000/blog/${report._id}`} />
+        <link rel="canonical" href={`${window.location.origin}/blog/${report._id}`} />
         
         <script type="application/ld+json">
           {JSON.stringify(generateReportSchema(report))}
@@ -326,7 +328,7 @@ const BlogPostPage: React.FC = () => {
                 <div className="flex items-center gap-3">
                   {report.userId.avatarUrl ? (
                     <img
-                      src={`http://localhost:5000${report.userId.avatarUrl}`}
+                      src={`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5000'}${report.userId.avatarUrl}`}
                       alt={`${report.userId.firstName} ${report.userId.lastName}`}
                       className="w-10 h-10 rounded-full object-cover border-2 border-blue-200 dark:border-blue-700"
                     />
