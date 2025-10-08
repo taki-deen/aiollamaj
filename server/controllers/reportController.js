@@ -111,7 +111,14 @@ const downloadReport = async (req, res) => {
   try {
     const { reportId } = req.params;
     const report = await findReportById(reportId);
-    checkReportOwnership(report, req.user?._id);
+    
+    // التحقق من الملكية فقط إذا كان المستخدم مسجل دخول
+    if (req.user) {
+      checkReportOwnership(report, req.user._id);
+    } else if (!report.isPublic) {
+      // إذا التقرير خاص ولا يوجد مستخدم، منع التحميل
+      return sendError(res, 'Authentication required', 401);
+    }
 
     if (!report.generatedReport) {
       return sendError(res, 'Report not generated yet', 400);

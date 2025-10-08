@@ -39,7 +39,7 @@ const CreateReportPage: React.FC = () => {
       const token = localStorage.getItem('token');
       const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
       
-      const response = await fetch(`${API_BASE}/reports/${currentReport._id}/pdf`, {
+      const response = await fetch(`${API_BASE}/reports/${currentReport._id}/download`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -55,6 +55,10 @@ const CreateReportPage: React.FC = () => {
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
+      } else {
+        console.error('Download failed with status:', response.status);
+        const errorText = await response.text();
+        console.error('Error:', errorText);
       }
     } catch (error) {
       console.error('Error downloading PDF:', error);
