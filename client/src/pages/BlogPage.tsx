@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useLocale } from '../contexts/LocaleContext';
 import Header from '../components/Header';
+import Sidebar from '../components/Sidebar';
 import { FileText, Calendar, User, Eye, Download, Search, Filter, Globe } from 'lucide-react';
 
 interface Report {
@@ -38,6 +39,7 @@ const BlogPage: React.FC = () => {
   const [selectedLanguage, setSelectedLanguage] = useState<'all' | 'ar' | 'en'>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
   const [user, setUser] = useState<User | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const { locale, t } = useLocale();
   const navigate = useNavigate();
 
@@ -116,6 +118,11 @@ const BlogPage: React.FC = () => {
     navigate('/');
   };
 
+  const handleNavigation = (view: string) => {
+    setSidebarOpen(false);
+    navigate(`/${view}`);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
@@ -131,6 +138,29 @@ const BlogPage: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Header */}
       <Header user={user} onLogout={handleLogout} />
+      
+      {/* Sidebar for logged-in users */}
+      {user && (
+        <>
+          <Sidebar
+            isOpen={sidebarOpen}
+            onClose={() => setSidebarOpen(false)}
+            user={user}
+            currentView="blog"
+            onNavigate={handleNavigation}
+          />
+          
+          {/* Burger Menu Button */}
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className={`fixed top-20 ${locale === 'ar' ? 'right-4' : 'left-4'} z-30 p-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-110`}
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        </>
+      )}
       
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-800 dark:to-indigo-800 text-white py-20">
