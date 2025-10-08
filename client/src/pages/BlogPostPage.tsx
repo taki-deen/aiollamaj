@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { useLocale } from '../contexts/LocaleContext';
+import { generateReportSchema, getExcerpt } from '../utils/seo';
 import Header from '../components/Header';
 import Sidebar from '../components/Sidebar';
 import ReactMarkdown from 'react-markdown';
@@ -195,6 +197,34 @@ const BlogPostPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <Helmet>
+        <title>{report.filename} - {locale === 'ar' ? 'مدونة التقارير' : 'Reports Blog'}</title>
+        <meta name="description" content={getExcerpt(report.generatedReport)} />
+        <meta name="keywords" content={`${report.filename}, ${report.prompt || ''}, ${locale === 'ar' ? 'تقرير ذكاء اصطناعي, تحليل بيانات' : 'AI report, data analysis'}`} />
+        <meta name="author" content={`${report.userId?.firstName || ''} ${report.userId?.lastName || ''}`} />
+        
+        <meta property="og:title" content={report.filename} />
+        <meta property="og:description" content={getExcerpt(report.generatedReport)} />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content={`http://localhost:3000/blog/${report._id}`} />
+        <meta property="og:image" content={report.userId?.avatarUrl ? `http://localhost:5000${report.userId.avatarUrl}` : 'http://localhost:3000/logo512.png'} />
+        <meta property="article:published_time" content={report.generatedAt || report.createdAt} />
+        <meta property="article:author" content={`${report.userId?.firstName || ''} ${report.userId?.lastName || ''}`} />
+        <meta property="article:tag" content={report.language === 'ar' ? 'عربي' : 'English'} />
+        
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={report.filename} />
+        <meta name="twitter:description" content={getExcerpt(report.generatedReport)} />
+        <meta name="twitter:image" content={report.userId?.avatarUrl ? `http://localhost:5000${report.userId.avatarUrl}` : 'http://localhost:3000/logo512.png'} />
+        
+        <meta name="robots" content="index, follow" />
+        <link rel="canonical" href={`http://localhost:3000/blog/${report._id}`} />
+        
+        <script type="application/ld+json">
+          {JSON.stringify(generateReportSchema(report))}
+        </script>
+      </Helmet>
+      
       {/* Header */}
       <Header user={user} onLogout={handleLogout} />
       

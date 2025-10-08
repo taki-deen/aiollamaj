@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { useLocale } from '../contexts/LocaleContext';
+import { generateBlogSchema } from '../utils/seo';
 import Header from '../components/Header';
 import Sidebar from '../components/Sidebar';
 import { FileText, Calendar, User, Eye, Download, Search, Filter, Globe } from 'lucide-react';
@@ -140,6 +142,42 @@ const BlogPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <Helmet>
+        <title>{locale === 'ar' ? 'مدونة التقارير - تقارير احترافية بالذكاء الاصطناعي' : 'Reports Blog - Professional AI-Generated Reports'}</title>
+        <meta name="description" content={locale === 'ar' 
+          ? `اكتشف ${filteredReports.length} تقرير احترافي مولد بالذكاء الاصطناعي. تحليلات متقدمة للبيانات، رؤى ذكية، وتقارير شاملة في مختلف المجالات.`
+          : `Discover ${filteredReports.length} professional AI-generated reports. Advanced data analytics, smart insights, and comprehensive reports across various domains.`
+        } />
+        <meta name="keywords" content={locale === 'ar'
+          ? 'تقارير ذكاء اصطناعي, تحليل بيانات, تقارير احترافية, AI Reports, مدونة التقارير, تحليلات متقدمة'
+          : 'AI reports, data analysis, professional reports, AI analytics, reports blog, advanced analytics'
+        } />
+        
+        <meta property="og:title" content={locale === 'ar' ? 'مدونة التقارير - AI Reports' : 'Reports Blog - AI Reports'} />
+        <meta property="og:description" content={locale === 'ar'
+          ? 'تصفح مئات التقارير الاحترافية المولدة بالذكاء الاصطناعي في مختلف المجالات'
+          : 'Browse hundreds of professional AI-generated reports across various domains'
+        } />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="http://localhost:3000/blog" />
+        <meta property="og:image" content="http://localhost:3000/logo512.png" />
+        
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={locale === 'ar' ? 'مدونة التقارير' : 'Reports Blog'} />
+        <meta name="twitter:description" content={locale === 'ar'
+          ? 'تقارير احترافية مولدة بالذكاء الاصطناعي'
+          : 'Professional AI-generated reports'
+        } />
+        
+        <meta name="robots" content="index, follow" />
+        <meta name="author" content="AI Reports" />
+        <link rel="canonical" href="http://localhost:3000/blog" />
+        
+        <script type="application/ld+json">
+          {JSON.stringify(generateBlogSchema(filteredReports.length))}
+        </script>
+      </Helmet>
+      
       {/* Header */}
       <Header user={user} onLogout={handleLogout} />
       
@@ -252,16 +290,18 @@ const BlogPage: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredReports.map((report) => (
-              <div
+              <article
                 key={report._id}
                 className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer transform hover:-translate-y-2"
                 onClick={() => handleViewReport(report._id)}
+                itemScope
+                itemType="https://schema.org/Article"
               >
                 {/* Card Header */}
                 <div className="bg-gradient-to-r from-blue-500 to-indigo-500 p-6 text-white">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex-1">
-                      <h3 className="text-xl font-bold mb-2 line-clamp-2 group-hover:text-blue-100 transition-colors">
+                      <h3 className="text-xl font-bold mb-2 line-clamp-2 group-hover:text-blue-100 transition-colors" itemProp="headline">
                         {report.filename}
                       </h3>
                       <div className="flex items-center gap-2 text-blue-100 text-sm">
@@ -291,23 +331,25 @@ const BlogPage: React.FC = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                        <span className="font-semibold text-gray-900 dark:text-white">
-                          {report.userId?.firstName} {report.userId?.lastName}
+                        <span className="font-semibold text-gray-900 dark:text-white" itemProp="author" itemScope itemType="https://schema.org/Person">
+                          <span itemProp="name">{report.userId?.firstName} {report.userId?.lastName}</span>
                         </span>
                       </div>
                       <div className="flex items-center gap-2 mt-1">
                         <Calendar className="w-3 h-3 text-gray-400" />
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                        <time className="text-xs text-gray-500 dark:text-gray-400" itemProp="datePublished" dateTime={report.generatedAt || report.createdAt}>
                           {formatDate(report.generatedAt || report.createdAt)}
-                        </span>
+                        </time>
                       </div>
                     </div>
                   </div>
 
                   {/* Excerpt */}
-                  <p className="text-gray-600 dark:text-gray-300 mb-4 line-clamp-3 text-sm">
+                  <p className="text-gray-600 dark:text-gray-300 mb-4 line-clamp-3 text-sm" itemProp="description">
                     {getExcerpt(report.generatedReport)}
                   </p>
+                  <meta itemProp="url" content={`http://localhost:3000/blog/${report._id}`} />
+                  <meta itemProp="image" content={report.userId?.avatarUrl ? `http://localhost:5000${report.userId.avatarUrl}` : 'http://localhost:3000/logo512.png'} />
 
                   {/* Prompt */}
                   {report.prompt && (
@@ -358,7 +400,7 @@ const BlogPage: React.FC = () => {
                     </button>
                   </div>
                 </div>
-              </div>
+              </article>
             ))}
           </div>
         )}
