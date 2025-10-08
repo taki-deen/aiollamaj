@@ -48,9 +48,20 @@ const BlogPostPage: React.FC = () => {
   const fetchReport = async (id: string) => {
     try {
       const response = await axios.get(`http://localhost:5000/api/reports/${id}`);
-      setReport(response.data.data);
+      const reportData = response.data.success ? response.data.data : response.data;
+      
+      if (!reportData.userId) {
+        reportData.userId = {
+          firstName: locale === 'ar' ? 'مستخدم' : 'User',
+          lastName: locale === 'ar' ? 'مجهول' : 'Unknown',
+          avatarUrl: null
+        };
+      }
+      
+      setReport(reportData);
     } catch (error) {
       console.error('Error fetching report:', error);
+      alert(locale === 'ar' ? 'فشل تحميل التقرير' : 'Failed to load report');
       navigate('/blog');
     } finally {
       setLoading(false);
@@ -222,30 +233,32 @@ const BlogPostPage: React.FC = () => {
           <div className="border-b border-gray-200 dark:border-gray-700 px-8 py-6">
             <div className="flex flex-wrap items-center gap-6 text-sm text-gray-600 dark:text-gray-400">
               {/* Author */}
-              <div className="flex items-center gap-3">
-                {report.userId.avatarUrl ? (
-                  <img
-                    src={`http://localhost:5000${report.userId.avatarUrl}`}
-                    alt={`${report.userId.firstName} ${report.userId.lastName}`}
-                    className="w-10 h-10 rounded-full object-cover border-2 border-blue-200 dark:border-blue-700"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold text-sm border-2 border-blue-200 dark:border-blue-700">
-                    {getInitials(report.userId.firstName, report.userId.lastName)}
+              {report.userId && (
+                <div className="flex items-center gap-3">
+                  {report.userId.avatarUrl ? (
+                    <img
+                      src={`http://localhost:5000${report.userId.avatarUrl}`}
+                      alt={`${report.userId.firstName} ${report.userId.lastName}`}
+                      className="w-10 h-10 rounded-full object-cover border-2 border-blue-200 dark:border-blue-700"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold text-sm border-2 border-blue-200 dark:border-blue-700">
+                      {getInitials(report.userId.firstName || 'U', report.userId.lastName || 'U')}
+                    </div>
+                  )}
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      <span className="font-medium text-gray-900 dark:text-white">
+                        {report.userId.firstName} {report.userId.lastName}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {locale === 'ar' ? 'الكاتب' : 'Author'}
+                    </p>
                   </div>
-                )}
-                <div>
-                  <div className="flex items-center gap-2">
-                    <User className="w-4 h-4" />
-                    <span className="font-medium text-gray-900 dark:text-white">
-                      {report.userId.firstName} {report.userId.lastName}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    {locale === 'ar' ? 'الكاتب' : 'Author'}
-                  </p>
                 </div>
-              </div>
+              )}
 
               {/* Date */}
               <div className="flex items-center gap-2">

@@ -117,10 +117,15 @@ const getPublicReports = async (req, res) => {
 const getReport = async (req, res) => {
   try {
     const { reportId } = req.params;
-    const report = await findReportById(reportId);
-    checkReportOwnership(report, req.user?._id);
+    const report = await findReportById(reportId, true);
     
-    sendSuccess(res, { report });
+    if (req.user) {
+      checkReportOwnership(report, req.user._id);
+    } else if (!report.isPublic) {
+      return sendError(res, 'This report is private', 403);
+    }
+    
+    sendSuccess(res, report);
   } catch (error) {
     console.error('Get report error:', error);
     const statusCode = error.message.includes('not found') ? 404 : 
