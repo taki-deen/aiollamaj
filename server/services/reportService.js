@@ -43,22 +43,27 @@ const parseCSV = (csvContent) => {
   return data;
 };
 
-const generateReport = async (data, prompt) => {
+const generateReport = async (data, prompt, language = 'ar') => {
   try {
     const apiKey = process.env.GROQ_API_KEY || process.env.HF_TOKEN;
     
     if (!apiKey || apiKey === 'your_api_key_here' || apiKey === 'your_huggingface_token_here') {
-      return generateFallbackReport(data, prompt);
+      return generateFallbackReport(data, prompt, language);
     }
 
     const dataSample = data.slice(0, 30);
     const dataString = JSON.stringify(dataSample, null, 2);
     
-    const userPrompt = prompt?.trim() || 'Provide comprehensive insights and analysis';
+    const userPrompt = prompt?.trim() || (language === 'ar' ? 'قدم رؤى وتحليل شامل' : 'Provide comprehensive insights and analysis');
+    
+    // تحديد اللغة المطلوبة
+    const languageInstruction = language === 'ar' 
+      ? 'You MUST write your ENTIRE response in Arabic (العربية) ONLY. Do not include English translation.'
+      : 'You MUST write your ENTIRE response in English ONLY. Do not include Arabic translation.';
     
     const fullPrompt = `You are a professional data analyst. I need you to focus SPECIFICALLY on the user's request below.
 
-CRITICAL REQUIREMENT: You MUST provide your entire response in BOTH Arabic and English. Start with Arabic, then provide the same content in English.
+CRITICAL LANGUAGE REQUIREMENT: ${languageInstruction}
 
 User's Specific Request:
 "${userPrompt}"
@@ -75,39 +80,44 @@ Instructions:
 4. Provide detailed, relevant insights based on what they asked
 5. Include data-driven evidence from the dataset
 
-FORMAT REQUIREMENTS (MANDATORY):
-First, write the COMPLETE analysis in Arabic (العربية):
-- Use clear Arabic sections and headers
-- Include bullet points for readability
+FORMAT REQUIREMENTS:
+${language === 'ar' ? `
+- Write in Arabic (العربية) ONLY
+- Use clear Arabic sections with # and ##
+- Include bullet points (-)
 - Provide specific numbers and statistics
 - Give direct answers to the user's request
+- Use professional Arabic terminology
 
-Then, write the EXACT SAME analysis in English:
-- Use clear English sections and headers
-- Include bullet points for readability
+Example:
+# تحليل البيانات
+## النتائج الرئيسية
+- النقطة الأولى
+- النقطة الثانية
+
+## التوصيات
+- توصية 1
+- توصية 2
+` : `
+- Write in English ONLY
+- Use clear sections with # and ##
+- Include bullet points (-)
 - Provide specific numbers and statistics
 - Give direct answers to the user's request
+- Use professional terminology
 
-Example Structure:
----
-# [Title in Arabic]
-## [Section 1 in Arabic]
-- [Point 1 in Arabic]
-- [Point 2 in Arabic]
+Example:
+# Data Analysis
+## Key Findings
+- First point
+- Second point
 
-## [Section 2 in Arabic]
-...
+## Recommendations
+- Recommendation 1
+- Recommendation 2
+`}
 
----
-# [Title in English]
-## [Section 1 in English]
-- [Point 1 in English]
-- [Point 2 in English]
-
-## [Section 2 in English]
-...
-
-Remember: Your response must be UNIQUE, SPECIFIC to the user's request, and provided in BOTH languages.`;
+Remember: Your response must be UNIQUE and SPECIFIC to the user's request in ${language === 'ar' ? 'Arabic' : 'English'} only.`;
 
     let response;
     
@@ -116,16 +126,18 @@ Remember: Your response must be UNIQUE, SPECIFIC to the user's request, and prov
         'https://api.groq.com/openai/v1/chat/completions',
         {
           model: 'llama-3.3-70b-versatile',
-          messages: [
+        messages: [
             {
               role: 'system',
-              content: 'You are an expert bilingual data analyst fluent in both Arabic and English. Your job is to: 1) Carefully read and understand the user\'s specific request, 2) Provide a detailed, customized analysis that directly addresses what they asked for, 3) ALWAYS provide your COMPLETE response in BOTH Arabic and English languages. Start with Arabic, then provide the same content in English. Each request is unique - never give generic responses. The bilingual requirement is MANDATORY - never skip either language.'
+              content: language === 'ar' 
+                ? 'أنت محلل بيانات محترف. مهمتك: 1) قراءة وفهم طلب المستخدم بعناية، 2) تقديم تحليل مفصل ومخصص يجيب مباشرة على ما طلبه، 3) يجب أن تكون ردودك دائماً فريدة ومحددة - لا تعطي ردوداً عامة. اكتب بالعربية فقط.'
+                : 'You are a professional data analyst. Your tasks: 1) Carefully read and understand the user\'s specific request, 2) Provide a detailed, customized analysis that directly addresses what they asked for, 3) Your responses must always be unique and specific - never give generic responses. Write in English only.'
             },
-            {
-              role: 'user',
-              content: fullPrompt
-            }
-          ],
+          {
+            role: 'user',
+            content: fullPrompt
+          }
+        ],
           temperature: 0.8,
           max_tokens: 2500
         },
@@ -144,24 +156,24 @@ Remember: Your response must be UNIQUE, SPECIFIC to the user's request, and prov
           inputs: fullPrompt,
           parameters: {
             max_new_tokens: 1500,
-            temperature: 0.7,
+        temperature: 0.7,
             top_p: 0.9,
             return_full_text: false
           }
-        },
-        {
-          headers: {
-            'Authorization': `Bearer ${process.env.HF_TOKEN}`,
-            'Content-Type': 'application/json'
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${process.env.HF_TOKEN}`,
+          'Content-Type': 'application/json'
           },
           timeout: 30000
         }
       );
-    }
+      }
 
     if (response.data) {
       if (response.data.choices && response.data.choices[0] && response.data.choices[0].message) {
-        return response.data.choices[0].message.content;
+      return response.data.choices[0].message.content;
       } else if (Array.isArray(response.data) && response.data[0] && response.data[0].generated_text) {
         return response.data[0].generated_text;
       } else {
@@ -177,7 +189,7 @@ Remember: Your response must be UNIQUE, SPECIFIC to the user's request, and prov
 };
 
 // Fallback function when AI API is unavailable
-const generateFallbackReport = (data, prompt) => {
+const generateFallbackReport = (data, prompt, language = 'ar') => {
   const dataLength = data.length;
   const columns = data.length > 0 ? Object.keys(data[0]) : [];
   
@@ -260,11 +272,10 @@ const generateFallbackReport = (data, prompt) => {
     });
   }
   
+  // إنشاء التقرير بلغة واحدة فقط
+  if (language === 'ar') {
   return `
-# 📈 تقرير تحليل البيانات / Data Analysis Report
-
----
-## النسخة العربية
+# 📈 تقرير تحليل البيانات
 
 ### 📋 الملخص
 - **إجمالي السجلات**: ${dataLength}
@@ -304,7 +315,12 @@ ${insights.map(insight => `- ${insight}`).join('\n')}
 5. **التحليل المتقدم**: ${numericColumns.length >= 2 ? 'النظر في تحليل الانحدار للعلاقات' : 'الحاجة إلى المزيد من المتغيرات الرقمية للتحليل المتقدم'}
 
 ---
-## English Version
+*ملاحظة: هذا تحليل إحصائي آلي. للحصول على رؤى متقدمة مدعومة بالذكاء الاصطناعي، يرجى تكوين مفتاح API صالح في متغيرات البيئة.*
+`;
+  } else {
+    // English version
+    return `
+# 📈 Data Analysis Report
 
 ### 📋 Summary
 - **Total Records**: ${dataLength}
@@ -344,18 +360,15 @@ ${insights.map(insight => `- ${insight}`).join('\n')}
 5. **Advanced Analysis**: ${numericColumns.length >= 2 ? 'Consider regression analysis for relationships' : 'Need more numeric variables for advanced analysis'}
 
 ---
-*ملاحظة: هذا تحليل إحصائي آلي. للحصول على رؤى متقدمة مدعومة بالذكاء الاصطناعي، يرجى تكوين مفتاح API صالح في متغيرات البيئة.*
 *Note: This is an automated statistical analysis. For advanced AI-powered insights, please configure a valid API key in the environment variables.*
-  `;
+`;
+  }
 };
 
 const generatePDF = async (report) => {
   try {
     const date = new Date(report.generatedAt || report.createdAt);
-    
-    // تقسيم المحتوى إلى قسم عربي وإنجليزي
-    const reportText = report.generatedReport;
-    const parts = reportText.split(/---+/); // فاصل بين العربي والإنجليزي
+    const reportLanguage = report.language || 'ar';
     
     // دالة لتحويل Markdown إلى HTML
     const convertMarkdown = (text) => {
@@ -374,20 +387,8 @@ const generatePDF = async (report) => {
         .replace(/(<li>.*?<\/li>)/g, '<ul>$1</ul>');
     };
     
-    // تحديد القسم العربي والإنجليزي
-    let arabicContent = '';
-    let englishContent = '';
-    
-    if (parts.length > 1) {
-      // يوجد فاصل - القسم الأول عربي والثاني إنجليزي
-      arabicContent = convertMarkdown(parts[0].trim());
-      englishContent = convertMarkdown(parts[1].trim());
-    } else {
-      // لا يوجد فاصل - نضع الكل في القسمين
-      const converted = convertMarkdown(reportText);
-      arabicContent = converted;
-      englishContent = converted;
-    }
+    // تحويل المحتوى
+    const htmlContent = convertMarkdown(report.generatedReport);
     
     const html = `
 <!DOCTYPE html>
@@ -406,18 +407,8 @@ const generatePDF = async (report) => {
       background: white;
       color: #333;
       line-height: 1.8;
-    }
-    /* قسم عربي - RTL */
-    .arabic-section {
-      direction: rtl;
-      text-align: right;
-      margin-bottom: 50px;
-      page-break-after: always;
-    }
-    /* قسم إنجليزي - LTR */
-    .english-section {
-      direction: ltr;
-      text-align: left;
+      direction: ${reportLanguage === 'ar' ? 'rtl' : 'ltr'};
+      text-align: ${reportLanguage === 'ar' ? 'right' : 'left'};
     }
     .header {
       text-align: center;
@@ -439,7 +430,7 @@ const generatePDF = async (report) => {
       padding: 15px;
       border-radius: 8px;
       margin-bottom: 25px;
-      border-left: 4px solid #4F46E5;
+      ${reportLanguage === 'ar' ? 'border-right: 4px solid #4F46E5;' : 'border-left: 4px solid #4F46E5;'}
     }
     .meta p {
       margin: 5px 0;
@@ -480,27 +471,15 @@ const generatePDF = async (report) => {
       margin: 10px 0;
       font-size: 12px;
     }
-    /* القوائم في العربي */
-    .arabic-section ul {
-      margin: 10px 30px 10px 0;
-      padding-right: 20px;
+    /* القوائم */
+    ul {
+      margin: ${reportLanguage === 'ar' ? '10px 30px 10px 0' : '10px 0 10px 30px'};
+      ${reportLanguage === 'ar' ? 'padding-right: 20px;' : 'padding-left: 20px;'}
       list-style-position: inside;
     }
-    .arabic-section li {
+    li {
       margin: 5px 0;
       font-size: 12px;
-      text-align: right;
-    }
-    /* القوائم في الإنجليزي */
-    .english-section ul {
-      margin: 10px 0 10px 30px;
-      padding-left: 20px;
-      list-style-position: inside;
-    }
-    .english-section li {
-      margin: 5px 0;
-      font-size: 12px;
-      text-align: left;
     }
     strong {
       color: #1F2937;
@@ -522,14 +501,14 @@ const generatePDF = async (report) => {
 </head>
 <body>
   <div class="header">
-    <h1>تقرير تحليل البيانات | Data Analysis Report</h1>
-    <div class="subtitle">AI-Powered Insights | رؤى مدعومة بالذكاء الاصطناعي</div>
+    <h1>${reportLanguage === 'ar' ? 'تقرير تحليل البيانات' : 'Data Analysis Report'}</h1>
+    <div class="subtitle">${reportLanguage === 'ar' ? 'رؤى مدعومة بالذكاء الاصطناعي' : 'AI-Powered Insights'}</div>
   </div>
   
-  <div class="meta" style="direction: rtl; text-align: right;">
-    <p><strong>الملف:</strong> ${report.filename}</p>
-    ${report.prompt ? `<p><strong>الطلب:</strong> ${report.prompt}</p>` : ''}
-    <p><strong>تاريخ التوليد:</strong> ${date.toLocaleString('ar-SA', { 
+  <div class="meta">
+    <p><strong>${reportLanguage === 'ar' ? 'الملف:' : 'File:'}</strong> ${report.filename}</p>
+    ${report.prompt ? `<p><strong>${reportLanguage === 'ar' ? 'الطلب:' : 'Request:'}</strong> ${report.prompt}</p>` : ''}
+    <p><strong>${reportLanguage === 'ar' ? 'تاريخ التوليد:' : 'Generated:'}</strong> ${date.toLocaleString(reportLanguage === 'ar' ? 'ar-SA' : 'en-US', { 
       year: 'numeric', 
       month: 'long', 
       day: 'numeric',
@@ -538,37 +517,17 @@ const generatePDF = async (report) => {
     })}</p>
   </div>
   
-  <!-- القسم العربي -->
-  <div class="arabic-section">
-    <div class="content">
-      ${arabicContent}
-    </div>
-  </div>
-  
-  <!-- فاصل بين القسمين -->
-  <div style="page-break-before: always;"></div>
-  
-  <!-- القسم الإنجليزي -->
-  <div class="english-section">
-    <div class="meta" style="direction: ltr; text-align: left; border-left: none; border-right: 4px solid #4F46E5;">
-      <p><strong>File:</strong> ${report.filename}</p>
-      ${report.prompt ? `<p><strong>Request:</strong> ${report.prompt}</p>` : ''}
-      <p><strong>Generated:</strong> ${date.toLocaleString('en-US', { 
-        year: 'numeric', 
-        month: 'long', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      })}</p>
-    </div>
-    <div class="content">
-      ${englishContent}
-    </div>
+  <div class="content">
+    ${htmlContent}
   </div>
   
   <div class="footer">
-    <p>مدعوم بنظام توليد التقارير الذكي | Powered by AI Report Generator System</p>
-    <p>مولد بواسطة Groq Llama 3.3 70B | Generated with Groq Llama 3.3 70B</p>
+    <p>${reportLanguage === 'ar' 
+      ? 'مدعوم بنظام توليد التقارير الذكي' 
+      : 'Powered by AI Report Generator System'}</p>
+    <p>${reportLanguage === 'ar' 
+      ? 'مولد بواسطة Groq Llama 3.3 70B' 
+      : 'Generated with Groq Llama 3.3 70B'}</p>
   </div>
 </body>
 </html>`;
@@ -590,10 +549,10 @@ const generatePDF = async (report) => {
     
     return pdfBuffer;
     
-  } catch (error) {
+    } catch (error) {
     console.error('PDF Generation Error:', error);
     throw error;
-  }
+    }
 };
 
 module.exports = {

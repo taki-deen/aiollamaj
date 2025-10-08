@@ -33,6 +33,11 @@ const reportSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+  language: {
+    type: String,
+    enum: ['ar', 'en'],
+    default: 'ar'
+  },
   createdAt: {
     type: Date,
     default: Date.now

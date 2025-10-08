@@ -35,7 +35,8 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ reportId, onReportGen
       }
 
       const response = await axios.post(`${API_BASE}/reports/generate/${reportId}`, {
-        prompt: prompt.trim()
+        prompt: prompt.trim(),
+        language: locale // إرسال اللغة المختارة
       }, { headers });
 
       if (response.data.success) {

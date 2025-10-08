@@ -37,15 +37,16 @@ const uploadFile = async (req, res) => {
 const generateAReport = async (req, res) => {
   try {
     const { reportId } = req.params;
-    const { prompt } = req.body;
+    const { prompt, language } = req.body;
 
     const report = await findReportById(reportId);
     checkReportOwnership(report, req.user?._id);
 
-    const aiResponse = await generateReport(report.data, prompt);
+    const aiResponse = await generateReport(report.data, prompt, language || 'ar');
     
     report.generatedReport = aiResponse;
     report.prompt = prompt;
+    report.language = language || 'ar';
     report.status = 'completed';
     report.generatedAt = new Date();
     
