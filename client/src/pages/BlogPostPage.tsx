@@ -270,67 +270,67 @@ const BlogPostPage: React.FC = () => {
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{
-                h1: ({ node, ...props }) => (
+                h1: ({ ...props }) => (
                   <h1 className="text-4xl font-bold mb-6 text-gray-900 dark:text-white border-b-4 border-blue-500 pb-4" {...props} />
                 ),
-                h2: ({ node, ...props }) => (
+                h2: ({ ...props }) => (
                   <h2 className={`text-3xl font-semibold mb-4 mt-8 text-gray-800 dark:text-gray-100 ${
                     report.language === 'ar' ? 'border-r-4 pr-4' : 'border-l-4 pl-4'
                   } border-blue-500`} {...props} />
                 ),
-                h3: ({ node, ...props }) => (
+                h3: ({ ...props }) => (
                   <h3 className="text-2xl font-semibold mb-3 mt-6 text-gray-700 dark:text-gray-200" {...props} />
                 ),
-                h4: ({ node, ...props }) => (
+                h4: ({ ...props }) => (
                   <h4 className="text-xl font-semibold mb-2 mt-4 text-gray-700 dark:text-gray-200" {...props} />
                 ),
-                p: ({ node, ...props }) => (
+                p: ({ ...props }) => (
                   <p className="mb-4 text-gray-700 dark:text-gray-300 leading-relaxed" {...props} />
                 ),
-                ul: ({ node, ...props }) => (
+                ul: ({ ...props }) => (
                   <ul className={`mb-4 ${report.language === 'ar' ? 'mr-6' : 'ml-6'} space-y-2`} {...props} />
                 ),
-                ol: ({ node, ...props }) => (
+                ol: ({ ...props }) => (
                   <ol className={`mb-4 ${report.language === 'ar' ? 'mr-6' : 'ml-6'} space-y-2`} {...props} />
                 ),
-                li: ({ node, ...props }) => (
+                li: ({ ...props }) => (
                   <li className="text-gray-700 dark:text-gray-300" {...props} />
                 ),
-                strong: ({ node, ...props }) => (
+                strong: ({ ...props }) => (
                   <strong className="font-bold text-blue-600 dark:text-blue-400" {...props} />
                 ),
-                em: ({ node, ...props }) => (
+                em: ({ ...props }) => (
                   <em className="italic text-gray-600 dark:text-gray-400" {...props} />
                 ),
-                blockquote: ({ node, ...props }) => (
+                blockquote: ({ ...props }) => (
                   <blockquote className={`${
                     report.language === 'ar' ? 'border-r-4 pr-4' : 'border-l-4 pl-4'
                   } border-blue-300 bg-blue-50 dark:bg-blue-900/20 p-4 rounded-r-lg italic my-4`} {...props} />
                 ),
-                code: ({ node, ...props }) => (
+                code: ({ ...props }) => (
                   <code className="bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded text-sm font-mono text-blue-600 dark:text-blue-400" {...props} />
                 ),
-                pre: ({ node, ...props }) => (
+                pre: ({ ...props }) => (
                   <pre className="bg-gray-900 dark:bg-gray-950 text-gray-100 p-4 rounded-lg overflow-x-auto my-4" {...props} />
                 ),
-                table: ({ node, ...props }) => (
+                table: ({ ...props }) => (
                   <div className="overflow-x-auto my-6">
                     <table className="min-w-full border-collapse border border-gray-300 dark:border-gray-700" {...props} />
                   </div>
                 ),
-                thead: ({ node, ...props }) => (
+                thead: ({ ...props }) => (
                   <thead className="bg-gray-100 dark:bg-gray-800" {...props} />
                 ),
-                th: ({ node, ...props }) => (
+                th: ({ ...props }) => (
                   <th className="border border-gray-300 dark:border-gray-700 px-4 py-2 text-left font-semibold" {...props} />
                 ),
-                td: ({ node, ...props }) => (
+                td: ({ ...props }) => (
                   <td className="border border-gray-300 dark:border-gray-700 px-4 py-2" {...props} />
                 ),
-                a: ({ node, ...props }) => (
+                a: ({ ...props }) => (
                   <a className="text-blue-600 dark:text-blue-400 hover:underline" {...props} />
                 ),
-                hr: ({ node, ...props }) => (
+                hr: ({ ...props }) => (
                   <hr className="my-8 border-gray-300 dark:border-gray-700" {...props} />
                 )
               }}
