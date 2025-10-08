@@ -61,7 +61,7 @@ const generateReport = async (data, prompt, language = 'ar') => {
       ? 'You MUST write your ENTIRE response in Arabic (العربية) ONLY. Do not include English translation.'
       : 'You MUST write your ENTIRE response in English ONLY. Do not include Arabic translation.';
     
-    const fullPrompt = `You are a professional data analyst. I need you to focus SPECIFICALLY on the user's request below.
+    const fullPrompt = `You are a professional data analyst and SEO content writer. Create an SEO-optimized report.
 
 CRITICAL LANGUAGE REQUIREMENT: ${languageInstruction}
 
@@ -73,51 +73,88 @@ Dataset Information:
 - Sample (first ${dataSample.length} records):
 ${dataString}
 
-Instructions:
-1. READ the user's request carefully
-2. Focus your analysis on answering their SPECIFIC question or request
-3. Use the dataset to support your analysis
-4. Provide detailed, relevant insights based on what they asked
-5. Include data-driven evidence from the dataset
-
-FORMAT REQUIREMENTS:
+SEO & CONTENT REQUIREMENTS:
 ${language === 'ar' ? `
-- Write in Arabic (العربية) ONLY
-- Use clear Arabic sections with # and ##
-- Include bullet points (-)
-- Provide specific numbers and statistics
-- Give direct answers to the user's request
-- Use professional Arabic terminology
+1. العنوان الرئيسي (H1): عنوان جذاب وواضح يلخص التقرير
+2. مقدمة قوية: 2-3 جمل تشرح موضوع التحليل
+3. أقسام منظمة بعناوين فرعية (H2, H3)
+4. استخدم جداول markdown للبيانات المقارنة
+5. أضف نقاط رئيسية بـ bullet points
+6. اختم بملخص تنفيذي واضح
 
-Example:
-# تحليل البيانات
-## النتائج الرئيسية
-- النقطة الأولى
-- النقطة الثانية
+هيكل التقرير المطلوب:
+# [عنوان جذاب وواضح]
 
-## التوصيات
-- توصية 1
+## نظرة عامة
+[مقدمة قوية تشرح الموضوع]
+
+## الإحصائيات الرئيسية
+| المؤشر | القيمة | النسبة |
+|--------|--------|--------|
+| ... | ... | ... |
+
+## التحليل التفصيلي
+### [قسم فرعي 1]
+- نقطة مهمة مع أرقام
+- نقطة أخرى
+
+### [قسم فرعي 2]
+- تفاصيل إضافية
+
+## الرؤى والتوصيات
+- توصية 1 (محددة وقابلة للتنفيذ)
 - توصية 2
+
+## الخلاصة
+[ملخص تنفيذي شامل]
+
+ملاحظات:
+- استخدم **نص عريض** للأرقام المهمة
+- أضف جداول للمقارنات
+- اجعل العناوين واضحة ومحددة
+- ركز على الإجابة المباشرة لطلب المستخدم
 ` : `
-- Write in English ONLY
-- Use clear sections with # and ##
-- Include bullet points (-)
-- Provide specific numbers and statistics
-- Give direct answers to the user's request
-- Use professional terminology
+1. Main Title (H1): Compelling and clear title summarizing the report
+2. Strong Introduction: 2-3 sentences explaining the analysis topic
+3. Well-organized sections with subheadings (H2, H3)
+4. Use markdown tables for comparative data
+5. Add key points with bullet points
+6. End with clear executive summary
 
-Example:
-# Data Analysis
-## Key Findings
-- First point
-- Second point
+Required Report Structure:
+# [Compelling Clear Title]
 
-## Recommendations
-- Recommendation 1
+## Overview
+[Strong introduction explaining the topic]
+
+## Key Statistics
+| Metric | Value | Percentage |
+|--------|-------|------------|
+| ... | ... | ... |
+
+## Detailed Analysis
+### [Subsection 1]
+- Important point with numbers
+- Another point
+
+### [Subsection 2]
+- Additional details
+
+## Insights & Recommendations
+- Recommendation 1 (specific and actionable)
 - Recommendation 2
+
+## Conclusion
+[Comprehensive executive summary]
+
+Notes:
+- Use **bold text** for important numbers
+- Add tables for comparisons
+- Make headings clear and specific
+- Focus on direct answers to user's request
 `}
 
-Remember: Your response must be UNIQUE and SPECIFIC to the user's request in ${language === 'ar' ? 'Arabic' : 'English'} only.`;
+Remember: Write ONLY in ${language === 'ar' ? 'Arabic' : 'English'}. Create SEO-friendly, well-structured content.`;
 
     let response;
     
@@ -130,8 +167,8 @@ Remember: Your response must be UNIQUE and SPECIFIC to the user's request in ${l
             {
               role: 'system',
               content: language === 'ar' 
-                ? 'أنت محلل بيانات محترف. مهمتك: 1) قراءة وفهم طلب المستخدم بعناية، 2) تقديم تحليل مفصل ومخصص يجيب مباشرة على ما طلبه، 3) يجب أن تكون ردودك دائماً فريدة ومحددة - لا تعطي ردوداً عامة. اكتب بالعربية فقط.'
-                : 'You are a professional data analyst. Your tasks: 1) Carefully read and understand the user\'s specific request, 2) Provide a detailed, customized analysis that directly addresses what they asked for, 3) Your responses must always be unique and specific - never give generic responses. Write in English only.'
+                ? 'أنت محلل بيانات محترف وكاتب محتوى SEO. مهمتك: 1) إنشاء تقارير منظمة بعناوين واضحة (H1, H2, H3)، 2) استخدام جداول markdown للبيانات، 3) إضافة نقاط رئيسية مع أرقام دقيقة، 4) كتابة محتوى صديق لمحركات البحث، 5) تنسيق احترافي مع **نص عريض** للأرقام المهمة. اكتب بالعربية فقط.'
+                : 'You are a professional data analyst and SEO content writer. Your tasks: 1) Create well-organized reports with clear headings (H1, H2, H3), 2) Use markdown tables for data, 3) Add key points with accurate numbers, 4) Write SEO-friendly content, 5) Professional formatting with **bold text** for important numbers. Write in English only.'
             },
           {
             role: 'user',
@@ -272,16 +309,23 @@ const generateFallbackReport = (data, prompt, language = 'ar') => {
     });
   }
   
-  // إنشاء التقرير بلغة واحدة فقط
+  // إنشاء التقرير بلغة واحدة فقط مع تحسينات SEO
   if (language === 'ar') {
   return `
-# 📈 تقرير تحليل البيانات
+# 📈 تحليل شامل للبيانات: ${prompt || 'تقرير احترافي'}
 
-### 📋 الملخص
-- **إجمالي السجلات**: ${dataLength}
-- **الأعمدة**: ${columns.join(', ')}
-- **طلب التحليل**: ${prompt}
-- **نوع التقرير**: تحليل إحصائي (AI API غير متاح)
+## نظرة عامة
+تم تحليل مجموعة بيانات شاملة تحتوي على **${dataLength} سجل** عبر **${columns.length} عمود** مختلف. هذا التقرير يقدم رؤى إحصائية متقدمة وتوصيات عملية بناءً على البيانات المتاحة.
+
+## الإحصائيات الرئيسية
+
+| البيان | القيمة |
+|--------|--------|
+| إجمالي السجلات | **${dataLength}** |
+| عدد الأعمدة | **${columns.length}** |
+| الأعمدة الرقمية | **${numericColumns.length}** |
+| الأعمدة النصية | **${textColumns.length}** |
+| جودة البيانات | ${missingData.length === 0 ? '✅ ممتازة (100%)' : `⚠️ ${missingData.length} عمود به قيم مفقودة`} |
 
 ### 📊 الإحصائيات التفصيلية
 
@@ -302,31 +346,64 @@ ${statistics.map(stat => {
   }
 }).join('\n\n')}
 
-### 🔍 الرؤى الأساسية
+## 🔍 الرؤى والتحليلات الرئيسية
 
-${insights.map(insight => `- ${insight}`).join('\n')}
+${insights.map(insight => insight).join('\n')}
 
-### 💡 التوصيات
+## 📌 النقاط المهمة
 
-1. **التحقق من البيانات**: ${missingData.length > 0 ? 'معالجة القيم المفقودة في الأعمدة المحددة' : 'البيانات كاملة - جودة جيدة!'}
-2. **التحليل الإحصائي**: ${numericColumns.length > 0 ? 'النظر في تحليل الارتباط بين المتغيرات الرقمية' : 'لا توجد بيانات رقمية للتحليل الإحصائي'}
-3. **التصنيف**: ${textColumns.length > 0 ? 'تجميع القيم النصية المتشابهة للحصول على رؤى أفضل' : 'لا توجد بيانات نصية للتصنيف'}
-4. **التصور البياني**: إنشاء مخططات ورسوم بيانية لتصور الأنماط
-5. **التحليل المتقدم**: ${numericColumns.length >= 2 ? 'النظر في تحليل الانحدار للعلاقات' : 'الحاجة إلى المزيد من المتغيرات الرقمية للتحليل المتقدم'}
+${numericColumns.slice(0, 3).map((stat, i) => `
+${i + 1}. **${stat.column}**: تتراوح القيم من **${stat.min}** إلى **${stat.max}** بمتوسط **${stat.average}**
+`).join('')}
+
+## 💡 التوصيات الاستراتيجية
+
+| التوصية | الأولوية | التأثير المتوقع |
+|---------|----------|------------------|
+| ${missingData.length > 0 ? 'معالجة القيم المفقودة' : 'الحفاظ على جودة البيانات'} | 🔴 عالية | تحسين دقة التحليل |
+| ${numericColumns.length > 0 ? 'تحليل الارتباطات' : 'إضافة مؤشرات رقمية'} | 🟡 متوسطة | رؤى أعمق |
+| إنشاء لوحات معلومات تفاعلية | 🟢 منخفضة | تحسين العرض |
+
+### توصيات مفصلة:
+
+1. **تحسين جودة البيانات**
+   - ${missingData.length > 0 ? `معالجة **${missingData.length}** عمود يحتوي على قيم مفقودة` : 'البيانات كاملة - استمر في نفس المعايير'}
+   - التحقق من صحة البيانات المدخلة
+   - توحيد التنسيقات
+
+2. **التحليل المتقدم**
+   - ${numericColumns.length >= 2 ? 'تحليل العلاقات بين المتغيرات الرقمية' : 'إضافة المزيد من المؤشرات الرقمية'}
+   - ${textColumns.length > 0 ? 'تصنيف وتجميع البيانات النصية' : 'إضافة بيانات وصفية'}
+
+3. **التصور والعرض**
+   - إنشاء رسوم بيانية تفاعلية
+   - لوحات معلومات في الوقت الفعلي
+   - تقارير دورية آلية
+
+## 📊 الخلاصة التنفيذية
+
+تم تحليل **${dataLength} سجل** بنجاح عبر **${columns.length} عمود** مختلف. البيانات ${missingData.length === 0 ? 'كاملة وجاهزة للتحليل المتقدم' : `تحتاج لمعالجة ${missingData.length} عمود قبل التحليل المتقدم`}. ${numericColumns.length > 0 ? `تم رصد ${numericColumns.length} مؤشر رقمي رئيسي` : 'ينصح بإضافة مؤشرات رقمية'}.
 
 ---
-*ملاحظة: هذا تحليل إحصائي آلي. للحصول على رؤى متقدمة مدعومة بالذكاء الاصطناعي، يرجى تكوين مفتاح API صالح في متغيرات البيئة.*
-`;
-  } else {
-    // English version
-    return `
-# 📈 Data Analysis Report
 
-### 📋 Summary
-- **Total Records**: ${dataLength}
-- **Columns**: ${columns.join(', ')}
-- **Analysis Request**: ${prompt}
-- **Report Type**: Statistical Analysis (AI API not available)
+**📝 ملاحظة**: هذا تقرير إحصائي مبني على البيانات المتاحة. للحصول على تحليل أعمق بالذكاء الاصطناعي، تأكد من تكوين GROQ API key.`;
+  } else {
+    // English version with SEO optimization
+    return `
+# 📈 Comprehensive Data Analysis: ${prompt || 'Professional Report'}
+
+## Overview
+Analyzed a comprehensive dataset containing **${dataLength} records** across **${columns.length} different columns**. This report provides advanced statistical insights and practical recommendations based on available data.
+
+## Key Statistics
+
+| Metric | Value |
+|--------|-------|
+| Total Records | **${dataLength}** |
+| Number of Columns | **${columns.length}** |
+| Numeric Columns | **${numericColumns.length}** |
+| Text Columns | **${textColumns.length}** |
+| Data Quality | ${missingData.length === 0 ? '✅ Excellent (100%)' : `⚠️ ${missingData.length} columns with missing values`} |
 
 ### 📊 Detailed Statistics
 
@@ -347,21 +424,47 @@ ${statistics.map(stat => {
   }
 }).join('\n\n')}
 
-### 🔍 Key Insights
+## 🔍 Key Insights & Analysis
 
-${insights.map(insight => `- ${insight}`).join('\n')}
+${insights.map(insight => insight).join('\n')}
 
-### 💡 Recommendations
+## 📌 Important Highlights
 
-1. **Data Validation**: ${missingData.length > 0 ? 'Address missing values in the identified columns' : 'Data appears complete - good quality!'}
-2. **Statistical Analysis**: ${numericColumns.length > 0 ? 'Consider correlation analysis between numeric variables' : 'No numeric data for statistical analysis'}
-3. **Categorization**: ${textColumns.length > 0 ? 'Group similar text values for better insights' : 'No text data for categorization'}
-4. **Visualization**: Create charts and graphs to visualize patterns
-5. **Advanced Analysis**: ${numericColumns.length >= 2 ? 'Consider regression analysis for relationships' : 'Need more numeric variables for advanced analysis'}
+${numericColumns.slice(0, 3).map((stat, i) => `
+${i + 1}. **${stat.column}**: Values range from **${stat.min}** to **${stat.max}** with average **${stat.average}**
+`).join('')}
+
+## 💡 Strategic Recommendations
+
+| Recommendation | Priority | Expected Impact |
+|---------------|----------|-----------------|
+| ${missingData.length > 0 ? 'Address Missing Values' : 'Maintain Data Quality'} | 🔴 High | Improve Analysis Accuracy |
+| ${numericColumns.length > 0 ? 'Correlation Analysis' : 'Add Numeric Metrics'} | 🟡 Medium | Deeper Insights |
+| Create Interactive Dashboards | 🟢 Low | Better Visualization |
+
+### Detailed Recommendations:
+
+1. **Improve Data Quality**
+   - ${missingData.length > 0 ? `Address **${missingData.length}** columns with missing values` : 'Data complete - maintain current standards'}
+   - Validate input data
+   - Standardize formats
+
+2. **Advanced Analysis**
+   - ${numericColumns.length >= 2 ? 'Analyze relationships between numeric variables' : 'Add more numeric indicators'}
+   - ${textColumns.length > 0 ? 'Classify and group text data' : 'Add descriptive data'}
+
+3. **Visualization & Presentation**
+   - Create interactive charts
+   - Real-time dashboards
+   - Automated periodic reports
+
+## 📊 Executive Summary
+
+Successfully analyzed **${dataLength} records** across **${columns.length} different columns**. Data is ${missingData.length === 0 ? 'complete and ready for advanced analysis' : `requires processing of ${missingData.length} columns before advanced analysis`}. ${numericColumns.length > 0 ? `Identified ${numericColumns.length} key numeric indicators` : 'Recommend adding numeric metrics'}.
 
 ---
-*Note: This is an automated statistical analysis. For advanced AI-powered insights, please configure a valid API key in the environment variables.*
-`;
+
+**📝 Note**: This is a statistical report based on available data. For deeper AI-powered analysis, ensure GROQ API key is configured.`;
   }
 };
 
