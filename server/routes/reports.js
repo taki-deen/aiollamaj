@@ -13,6 +13,7 @@ const {
   deleteReportByAdmin
 } = require('../controllers/reportController');
 const { authenticate, optionalAuth } = require('../middleware/auth');
+const { uploadLimiter, aiLimiter, downloadLimiter, adminLimiter } = require('../middleware/rateLimiter');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
@@ -43,11 +44,11 @@ const upload = multer({
   }
 });
 
-// File upload route (optional authentication)
-router.post('/upload', optionalAuth, upload.single('file'), uploadFile);
+// File upload route (optional authentication) - مع Rate Limiting
+router.post('/upload', uploadLimiter, optionalAuth, upload.single('file'), uploadFile);
 
-// Generate report (optional authentication)
-router.post('/generate/:reportId', optionalAuth, generateAReport);
+// Generate report (optional authentication) - مع Rate Limiting للـ AI
+router.post('/generate/:reportId', aiLimiter, optionalAuth, generateAReport);
 
 // Get all reports (optional authentication - shows user's reports if authenticated)
 router.get('/', optionalAuth, getAllReports);
@@ -55,14 +56,14 @@ router.get('/', optionalAuth, getAllReports);
 // Get single report (optional authentication)
 router.get('/:reportId', optionalAuth, getReport);
 
-// Download report as PDF (optional authentication)
-router.get('/:reportId/download', optionalAuth, downloadReport);
+// Download report as PDF (optional authentication) - مع Rate Limiting
+router.get('/:reportId/download', downloadLimiter, optionalAuth, downloadReport);
 
 // Delete report (optional authentication)
 router.delete('/:reportId', optionalAuth, deleteReport);
 
-// Admin routes
-router.get('/admin/all', authenticate, getAllReportsForAdmin);
-router.delete('/admin/:reportId', authenticate, deleteReportByAdmin);
+// Admin routes - مع Rate Limiting
+router.get('/admin/all', authenticate, adminLimiter, getAllReportsForAdmin);
+router.delete('/admin/:reportId', authenticate, adminLimiter, deleteReportByAdmin);
 
 module.exports = router;
