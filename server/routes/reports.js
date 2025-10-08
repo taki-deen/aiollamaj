@@ -10,6 +10,7 @@ const {
   getReport, 
   downloadReport,
   emailReport,
+  togglePublicStatus,
   deleteReport,
   getAllReportsForAdmin,
   deleteReportByAdmin
@@ -66,6 +67,9 @@ router.get('/:reportId/download', downloadLimiter, optionalAuth, downloadReport)
 
 // Email report as PDF (requires authentication) - مع Rate Limiting
 router.post('/:reportId/email', downloadLimiter, authenticate, emailReport);
+
+// Toggle public status (requires authentication)
+router.patch('/:reportId/toggle-public', authenticate, togglePublicStatus);
 
 // Delete report (optional authentication)
 router.delete('/:reportId', optionalAuth, deleteReport);

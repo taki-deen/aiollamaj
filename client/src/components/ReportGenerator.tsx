@@ -12,7 +12,7 @@ interface ReportGeneratorProps {
 const ReportGenerator: React.FC<ReportGeneratorProps> = ({ reportId, onReportGenerated }) => {
   const { t, locale } = useLocale();
   const [prompt, setPrompt] = useState('');
-  const [isPublic, setIsPublic] = useState(false);
+  const [isPublic, setIsPublic] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState('');
 

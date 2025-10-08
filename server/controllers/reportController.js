@@ -48,7 +48,7 @@ const generateAReport = async (req, res) => {
     report.generatedReport = aiResponse;
     report.prompt = prompt;
     report.language = language || 'ar';
-    report.isPublic = isPublic || false;
+    report.isPublic = isPublic !== undefined ? isPublic : true;
     report.status = 'completed';
     report.generatedAt = new Date();
     
@@ -243,6 +243,36 @@ const emailReport = async (req, res) => {
   }
 };
 
+// تغيير حالة التقرير من خاص إلى عام والعكس
+const togglePublicStatus = async (req, res) => {
+  try {
+    const { reportId } = req.params;
+    const { isPublic } = req.body;
+    
+    if (!req.user) {
+      return sendError(res, 'Authentication required', 401);
+    }
+    
+    const report = await findReportById(reportId);
+    checkReportOwnership(report, req.user._id);
+    
+    report.isPublic = isPublic;
+    await report.save();
+    
+    const message = isPublic
+      ? 'Report is now public and will appear in the blog'
+      : 'Report is now private';
+    
+    sendSuccess(res, { isPublic: report.isPublic }, message);
+    
+  } catch (error) {
+    console.error('Toggle public status error:', error);
+    const statusCode = error.message.includes('not found') ? 404 : 
+                       error.message.includes('Access denied') ? 403 : 500;
+    sendError(res, error.message || 'Failed to toggle public status', statusCode, error);
+  }
+};
+
 module.exports = {
   uploadFile,
   generateAReport,
@@ -251,6 +281,7 @@ module.exports = {
   getReport,
   downloadReport,
   emailReport,
+  togglePublicStatus,
   deleteReport,
   getAllReportsForAdmin,
   deleteReportByAdmin
