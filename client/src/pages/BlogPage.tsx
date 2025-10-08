@@ -111,6 +111,10 @@ const BlogPage: React.FC = () => {
     navigate(`/blog/${reportId}`);
   };
 
+  const getInitials = (firstName: string, lastName: string) => {
+    return `${firstName?.charAt(0) || ''}${lastName?.charAt(0) || ''}`.toUpperCase();
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
@@ -271,6 +275,35 @@ const BlogPage: React.FC = () => {
 
                 {/* Card Body */}
                 <div className="p-6">
+                  {/* Author Section with Avatar */}
+                  <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+                    {report.userId?.avatarUrl ? (
+                      <img
+                        src={`http://localhost:5000${report.userId.avatarUrl}`}
+                        alt={`${report.userId.firstName} ${report.userId.lastName}`}
+                        className="w-12 h-12 rounded-full object-cover border-2 border-blue-200 dark:border-blue-700 shadow-md"
+                      />
+                    ) : (
+                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold text-base border-2 border-blue-200 dark:border-blue-700 shadow-md">
+                        {getInitials(report.userId?.firstName || 'U', report.userId?.lastName || 'U')}
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                        <span className="font-semibold text-gray-900 dark:text-white">
+                          {report.userId?.firstName} {report.userId?.lastName}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Calendar className="w-3 h-3 text-gray-400" />
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {formatDate(report.generatedAt || report.createdAt)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Excerpt */}
                   <p className="text-gray-600 dark:text-gray-300 mb-4 line-clamp-3 text-sm">
                     {getExcerpt(report.generatedReport)}
@@ -287,20 +320,6 @@ const BlogPage: React.FC = () => {
                       </p>
                     </div>
                   )}
-
-                  {/* Metadata */}
-                  <div className="space-y-2 mb-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                      <User className="w-4 h-4" />
-                      <span>
-                        {report.userId.firstName} {report.userId.lastName}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                      <Calendar className="w-4 h-4" />
-                      <span>{formatDate(report.generatedAt || report.createdAt)}</span>
-                    </div>
-                  </div>
 
                   {/* Actions */}
                   <div className="flex gap-2">
