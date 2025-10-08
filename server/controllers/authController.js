@@ -2,6 +2,11 @@ const User = require('../models/User');
 const { generateToken } = require('../middleware/auth');
 const { sendSuccess, sendError } = require('../utils/responseHelper');
 const { checkUserExists, createUser } = require('../utils/userHelper');
+const { 
+  sendVerificationEmail, 
+  sendPasswordResetEmail, 
+  generateToken: generateEmailToken 
+} = require('../services/emailService');
 const path = require('path');
 const fs = require('fs');
 
@@ -11,9 +16,24 @@ const register = async (req, res) => {
     const { username, email, password, firstName, lastName } = req.body;
     
     const user = await createUser({ username, email, password, firstName, lastName });
+    
+    // توليد token للتحقق من البريد
+    const verificationToken = generateEmailToken();
+    user.emailVerificationToken = verificationToken;
+    user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000; // 24 ساعة
+    await user.save();
+    
+    // إرسال إيميل التحقق
+    const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+    await sendVerificationEmail(user, verificationUrl);
+    
     const token = generateToken(user._id);
 
-    sendSuccess(res, { user: user.toJSON(), token }, 'User registered successfully', 201);
+    sendSuccess(res, { 
+      user: user.toJSON(), 
+      token,
+      message: 'تم إرسال رابط التأكيد إلى بريدك الإلكتروني'
+    }, 'User registered successfully', 201);
   } catch (error) {
     console.error('Registration error:', error);
     sendError(res, error.message || 'Registration failed', 
@@ -360,6 +380,122 @@ const createUserByAdmin = async (req, res) => {
   }
 };
 
+// تأكيد البريد الإلكتروني
+const verifyEmail = async (req, res) => {
+  try {
+    const { token } = req.params;
+    
+    const user = await User.findOne({
+      emailVerificationToken: token,
+      emailVerificationExpires: { $gt: Date.now() }
+    });
+    
+    if (!user) {
+      return sendError(res, 'رابط التحقق غير صالح أو منتهي الصلاحية', 400);
+    }
+    
+    user.isEmailVerified = true;
+    user.emailVerificationToken = undefined;
+    user.emailVerificationExpires = undefined;
+    await user.save();
+    
+    sendSuccess(res, { user: user.toJSON() }, 'تم تأكيد البريد الإلكتروني بنجاح');
+    
+  } catch (error) {
+    console.error('Email verification error:', error);
+    sendError(res, 'Email verification failed', 500, error);
+  }
+};
+
+// إعادة إرسال إيميل التحقق
+const resendVerification = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    
+    if (user.isEmailVerified) {
+      return sendError(res, 'البريد الإلكتروني مؤكد بالفعل', 400);
+    }
+    
+    const verificationToken = generateEmailToken();
+    user.emailVerificationToken = verificationToken;
+    user.emailVerificationExpires = Date.now() + 24 * 60 * 60 * 1000;
+    await user.save();
+    
+    const verificationUrl = `${process.env.CLIENT_URL}/verify-email/${verificationToken}`;
+    await sendVerificationEmail(user, verificationUrl);
+    
+    sendSuccess(res, null, 'تم إرسال رابط التأكيد مجدداً');
+    
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    sendError(res, 'Failed to resend verification', 500, error);
+  }
+};
+
+// طلب إعادة تعيين كلمة المرور
+const forgotPassword = async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return sendError(res, 'البريد الإلكتروني مطلوب', 400);
+    }
+    
+    const user = await User.findOne({ email });
+    
+    if (!user) {
+      // لا نُخبر المستخدم إن كان البريد موجود أم لا (أمان)
+      return sendSuccess(res, null, 'إن كان البريد موجود، سيتم إرسال رابط إعادة التعيين');
+    }
+    
+    const resetToken = generateEmailToken();
+    user.resetPasswordToken = resetToken;
+    user.resetPasswordExpires = Date.now() + 60 * 60 * 1000; // ساعة واحدة
+    await user.save();
+    
+    const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+    await sendPasswordResetEmail(user, resetUrl);
+    
+    sendSuccess(res, null, 'تم إرسال رابط إعادة تعيين كلمة المرور');
+    
+  } catch (error) {
+    console.error('Forgot password error:', error);
+    sendError(res, 'Failed to process request', 500, error);
+  }
+};
+
+// إعادة تعيين كلمة المرور
+const resetPassword = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const { password } = req.body;
+    
+    if (!password || password.length < 6) {
+      return sendError(res, 'كلمة المرور يجب أن تكون 6 أحرف على الأقل', 400);
+    }
+    
+    const user = await User.findOne({
+      resetPasswordToken: token,
+      resetPasswordExpires: { $gt: Date.now() }
+    });
+    
+    if (!user) {
+      return sendError(res, 'رابط إعادة التعيين غير صالح أو منتهي الصلاحية', 400);
+    }
+    
+    user.password = password; // سيتم تشفيرها تلقائياً
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpires = undefined;
+    await user.save();
+    
+    sendSuccess(res, null, 'تم تغيير كلمة المرور بنجاح');
+    
+  } catch (error) {
+    console.error('Reset password error:', error);
+    sendError(res, 'Password reset failed', 500, error);
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -369,5 +505,9 @@ module.exports = {
   getAllUsers,
   updateUserByAdmin,
   deleteUserByAdmin,
-  createUserByAdmin
+  createUserByAdmin,
+  verifyEmail,
+  resendVerification,
+  forgotPassword,
+  resetPassword
 };

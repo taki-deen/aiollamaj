@@ -1,0 +1,366 @@
+const nodemailer = require('nodemailer');
+const crypto = require('crypto');
+
+// إعداد Gmail Transporter
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASSWORD
+  }
+});
+
+// اختبار الاتصال
+transporter.verify(function(error, success) {
+  if (error) {
+    console.error('❌ خطأ في إعداد Gmail:', error.message);
+  } else {
+    console.log('✅ Gmail جاهز لإرسال الإيميلات');
+  }
+});
+
+/**
+ * إرسال إيميل التحقق
+ */
+async function sendVerificationEmail(user, verificationUrl) {
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL_FROM,
+      to: user.email,
+      subject: '✅ تأكيد البريد الإلكتروني - Email Verification',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <style>
+            body { font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 0; }
+            .container { max-width: 600px; margin: 0 auto; }
+            .rtl { direction: rtl; text-align: right; }
+            .ltr { direction: ltr; text-align: left; }
+            .header {
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              color: white;
+              padding: 30px;
+              text-align: center;
+              border-radius: 8px 8px 0 0;
+            }
+            .content {
+              background: #f9fafb;
+              padding: 30px;
+            }
+            .button {
+              display: inline-block;
+              padding: 15px 30px;
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              color: white !important;
+              text-decoration: none;
+              border-radius: 8px;
+              margin: 20px 0;
+              font-weight: bold;
+            }
+            .warning-box {
+              background: #fef3c7;
+              border-right: 4px solid #f59e0b;
+              padding: 15px;
+              margin: 20px 0;
+              border-radius: 4px;
+            }
+            .footer {
+              text-align: center;
+              color: #6b7280;
+              font-size: 12px;
+              margin-top: 30px;
+              padding: 20px;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <!-- Arabic Version -->
+            <div class="rtl">
+              <div class="header">
+                <h1>🎉 مرحباً ${user.firstName}!</h1>
+                <p>شكراً لانضمامك إلى ${process.env.APP_NAME || 'AI Reports'}</p>
+              </div>
+              <div class="content">
+                <p>نحن سعداء بتسجيلك معنا! لإكمال التسجيل، يرجى تأكيد بريدك الإلكتروني.</p>
+                
+                <center>
+                  <a href="${verificationUrl}" class="button">
+                    ✅ تأكيد البريد الإلكتروني
+                  </a>
+                </center>
+                
+                <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">
+                  أو انسخ الرابط التالي في المتصفح:
+                </p>
+                <p style="word-break: break-all; background: #e5e7eb; padding: 10px; border-radius: 4px; font-size: 12px;">
+                  ${verificationUrl}
+                </p>
+                
+                <div class="warning-box">
+                  <strong>⚠️ ملاحظة:</strong>
+                  <p style="margin: 5px 0;">هذا الرابط صالح لمدة 24 ساعة فقط.</p>
+                </div>
+              </div>
+            </div>
+
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+
+            <!-- English Version -->
+            <div class="ltr">
+              <div class="header">
+                <h1>🎉 Welcome ${user.firstName}!</h1>
+                <p>Thank you for joining ${process.env.APP_NAME || 'AI Reports'}</p>
+              </div>
+              <div class="content">
+                <p>We're excited to have you! To complete your registration, please verify your email address.</p>
+                
+                <center>
+                  <a href="${verificationUrl}" class="button">
+                    ✅ Verify Email Address
+                  </a>
+                </center>
+                
+                <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 4px;">
+                  <strong>⚠️ Note:</strong>
+                  <p style="margin: 5px 0;">This link expires in 24 hours.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="footer">
+              <p>© 2025 ${process.env.APP_NAME || 'AI Reports'}. All rights reserved.</p>
+              <p>إذا لم تقم بالتسجيل، يرجى تجاهل هذا البريد.</p>
+              <p>If you didn't register, please ignore this email.</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('✅ تم إرسال إيميل التحقق إلى:', user.email);
+    return info;
+    
+  } catch (error) {
+    console.error('❌ خطأ في إرسال إيميل التحقق:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * إرسال إشعار توليد تقرير
+ */
+async function sendReportGeneratedEmail(user, report) {
+  try {
+    const reportUrl = `${process.env.CLIENT_URL}/reports/${report._id}`;
+    
+    const mailOptions = {
+      from: process.env.EMAIL_FROM,
+      to: user.email,
+      subject: '🎉 تم توليد تقريرك - Your Report is Ready',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+        </head>
+        <body style="font-family: Arial, sans-serif; padding: 20px;">
+          <div style="max-width: 600px; margin: 0 auto;">
+            <!-- Arabic -->
+            <div dir="rtl" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center;">
+              <h1>🎉 مرحباً ${user.firstName}!</h1>
+              <p style="font-size: 18px;">تقريرك جاهز الآن!</p>
+            </div>
+            
+            <div dir="rtl" style="background: #f0fdf4; padding: 30px; border-radius: 0 0 8px 8px;">
+              <p>تم توليد تقريرك بنجاح باستخدام الذكاء الاصطناعي! 🤖</p>
+              
+              <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0; border-right: 4px solid #10b981;">
+                <p><strong>📁 اسم الملف:</strong> ${report.filename}</p>
+                <p><strong>📅 التاريخ:</strong> ${new Date(report.generatedAt || report.createdAt).toLocaleDateString('ar-EG', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}</p>
+              </div>
+              
+              <center>
+                <a href="${reportUrl}" style="display: inline-block; padding: 15px 40px; background: #10b981; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0;">
+                  📊 عرض التقرير
+                </a>
+              </center>
+            </div>
+
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+
+            <!-- English -->
+            <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center;">
+              <h1>🎉 Hello ${user.firstName}!</h1>
+              <p style="font-size: 18px;">Your report is ready!</p>
+            </div>
+            
+            <div style="background: #f0fdf4; padding: 30px; border-radius: 0 0 8px 8px;">
+              <p>Your AI-powered report has been generated successfully! 🤖</p>
+              
+              <center>
+                <a href="${reportUrl}" style="display: inline-block; padding: 15px 40px; background: #10b981; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">
+                  📊 View Report
+                </a>
+              </center>
+            </div>
+
+            <div style="text-align: center; color: #6b7280; font-size: 12px; margin-top: 30px;">
+              <p>© 2025 ${process.env.APP_NAME || 'AI Reports'}</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('✅ تم إرسال إشعار التقرير إلى:', user.email);
+    return info;
+    
+  } catch (error) {
+    console.error('❌ خطأ في إرسال إشعار التقرير:', error.message);
+    // لا نرمي خطأ هنا حتى لا يفشل توليد التقرير
+  }
+}
+
+/**
+ * إرسال رابط إعادة تعيين كلمة المرور
+ */
+async function sendPasswordResetEmail(user, resetUrl) {
+  try {
+    const mailOptions = {
+      from: process.env.EMAIL_FROM,
+      to: user.email,
+      subject: '🔐 إعادة تعيين كلمة المرور - Reset Password',
+      html: `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+        </head>
+        <body style="font-family: Arial, sans-serif; padding: 20px;">
+          <div style="max-width: 600px; margin: 0 auto;">
+            <!-- Arabic -->
+            <div dir="rtl" style="background: #ef4444; color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center;">
+              <h1>🔐 إعادة تعيين كلمة المرور</h1>
+            </div>
+            
+            <div dir="rtl" style="background: #fef2f2; padding: 30px; border-radius: 0 0 8px 8px;">
+              <p>مرحباً ${user.firstName},</p>
+              <p>تلقينا طلباً لإعادة تعيين كلمة المرور الخاصة بحسابك.</p>
+              
+              <center>
+                <a href="${resetUrl}" style="display: inline-block; padding: 15px 40px; background: #ef4444; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0;">
+                  🔑 إعادة تعيين كلمة المرور
+                </a>
+              </center>
+              
+              <div style="background: #fee2e2; border-right: 4px solid #ef4444; padding: 15px; border-radius: 4px; margin: 20px 0;">
+                <p><strong>⚠️ تنبيه أمني:</strong></p>
+                <ul>
+                  <li>هذا الرابط صالح لمدة ساعة واحدة فقط</li>
+                  <li>إذا لم تطلب إعادة تعيين كلمة المرور، يرجى تجاهل هذا البريد</li>
+                  <li>لن يتمكن أحد من الوصول لحسابك بدون هذا الرابط</li>
+                </ul>
+              </div>
+            </div>
+
+            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e5e7eb;">
+
+            <!-- English -->
+            <div style="background: #ef4444; color: white; padding: 30px; border-radius: 8px 8px 0 0; text-align: center;">
+              <h1>🔐 Reset Your Password</h1>
+            </div>
+            
+            <div style="background: #fef2f2; padding: 30px; border-radius: 0 0 8px 8px;">
+              <p>Hello ${user.firstName},</p>
+              <p>We received a request to reset your password.</p>
+              
+              <center>
+                <a href="${resetUrl}" style="display: inline-block; padding: 15px 40px; background: #ef4444; color: white; text-decoration: none; border-radius: 8px; font-weight: bold;">
+                  🔑 Reset Password
+                </a>
+              </center>
+              
+              <div style="background: #fee2e2; border-left: 4px solid #ef4444; padding: 15px; border-radius: 4px; margin: 20px 0;">
+                <p><strong>⚠️ Security Notice:</strong></p>
+                <ul>
+                  <li>This link expires in 1 hour</li>
+                  <li>If you didn't request this, please ignore this email</li>
+                  <li>Your account is secure without this link</li>
+                </ul>
+              </div>
+            </div>
+
+            <div style="text-align: center; color: #6b7280; font-size: 12px; margin-top: 30px;">
+              <p>© 2025 ${process.env.APP_NAME || 'AI Reports'}</p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    };
+
+    const info = await transporter.sendMail(mailOptions);
+    console.log('✅ تم إرسال رابط إعادة التعيين إلى:', user.email);
+    return info;
+    
+  } catch (error) {
+    console.error('❌ خطأ في إرسال رابط إعادة التعيين:', error.message);
+    throw error;
+  }
+}
+
+/**
+ * توليد Token آمن
+ */
+function generateToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+/**
+ * اختبار سريع (للتطوير فقط)
+ */
+async function testEmail() {
+  try {
+    const testMail = await transporter.sendMail({
+      from: process.env.EMAIL_FROM,
+      to: process.env.EMAIL_USER,
+      subject: '✅ اختبار Gmail - Test Email',
+      html: `
+        <div style="font-family: Arial; padding: 20px; text-align: center;">
+          <h1 style="color: #10b981;">✅ Gmail يعمل بنجاح!</h1>
+          <p>Gmail is working successfully!</p>
+          <p style="color: #6b7280; font-size: 12px;">
+            ${new Date().toLocaleString('ar-EG')}
+          </p>
+        </div>
+      `
+    });
+    console.log('✅ تم إرسال إيميل الاختبار:', testMail.messageId);
+    return testMail;
+  } catch (error) {
+    console.error('❌ فشل اختبار الإيميل:', error.message);
+    throw error;
+  }
+}
+
+module.exports = {
+  sendVerificationEmail,
+  sendReportGeneratedEmail,
+  sendPasswordResetEmail,
+  generateToken,
+  testEmail
+};
+

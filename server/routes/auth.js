@@ -1,6 +1,20 @@
 const express = require('express');
 const router = express.Router();
-const { register, login, getProfile, updateProfile, changePassword, getAllUsers, updateUserByAdmin, deleteUserByAdmin, createUserByAdmin } = require('../controllers/authController');
+const { 
+  register, 
+  login, 
+  getProfile, 
+  updateProfile, 
+  changePassword, 
+  getAllUsers, 
+  updateUserByAdmin, 
+  deleteUserByAdmin, 
+  createUserByAdmin,
+  verifyEmail,
+  resendVerification,
+  forgotPassword,
+  resetPassword
+} = require('../controllers/authController');
 const { authenticate } = require('../middleware/auth');
 const { authLimiter, adminLimiter } = require('../middleware/rateLimiter');
 const multer = require('multer');
@@ -32,6 +46,14 @@ const upload = multer({ storage, fileFilter, limits: { fileSize: 5 * 1024 * 1024
 // Public routes - مع Rate Limiting للمصادقة
 router.post('/register', authLimiter, register);
 router.post('/login', authLimiter, login);
+
+// Email verification routes
+router.get('/verify-email/:token', verifyEmail);
+router.post('/resend-verification', authenticate, resendVerification);
+
+// Password reset routes
+router.post('/forgot-password', authLimiter, forgotPassword);
+router.post('/reset-password/:token', authLimiter, resetPassword);
 
 // Protected routes
 router.get('/profile', authenticate, getProfile);

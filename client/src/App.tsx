@@ -10,6 +10,9 @@ import CreateReportPage from './pages/CreateReportPage';
 import ReportsPage from './pages/ReportsPage';
 import SettingsPage from './pages/SettingsPage';
 import AdminPage from './pages/AdminPage';
+import VerifyEmailPage from './pages/VerifyEmailPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
 
 interface User {
   _id: string;
@@ -87,6 +90,11 @@ function App() {
           <Route path="/register" element={
             user ? <Navigate to="/create" replace /> : <RegisterPage onRegister={handleRegister} />
           } />
+
+          {/* Email Verification & Password Reset Routes */}
+          <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
 
           {/* Protected Routes */}
           <Route path="/create" element={
