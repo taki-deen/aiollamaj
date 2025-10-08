@@ -1,786 +1,1643 @@
-# 📚 شرح معماريّة الـ Backend
+# 🏗️ معمارية Backend - نظام التقارير الذكية
 
-## 🏗️ البنية العامة للمشروع
+> **نظام متكامل لتحليل البيانات وتوليد التقارير باستخدام الذكاء الاصطناعي**
+
+---
+
+## 📑 جدول المحتويات
+
+1. [نظرة عامة](#-نظرة-عامة)
+2. [هيكل المشروع](#-هيكل-المشروع)
+3. [الطبقات الأساسية](#-الطبقات-الأساسية)
+4. [نماذج قاعدة البيانات](#-نماذج-قاعدة-البيانات)
+5. [API Endpoints](#-api-endpoints)
+6. [المتحكمات (Controllers)](#-المتحكمات-controllers)
+7. [الخدمات (Services)](#-الخدمات-services)
+8. [الوسيطات (Middleware)](#-الوسيطات-middleware)
+9. [الدوال المساعدة (Utils)](#-الدوال-المساعدة-utils)
+10. [تدفق البيانات](#-تدفق-البيانات)
+11. [الأمان](#-الأمان)
+12. [التقنيات المستخدمة](#-التقنيات-المستخدمة)
+13. [الإعداد والتشغيل](#-الإعداد-والتشغيل)
+
+---
+
+## 🌟 نظرة عامة
+
+### ما هو المشروع؟
+
+نظام ويب متكامل يسمح للمستخدمين بـ:
+- 📤 رفع ملفات البيانات (CSV, Excel)
+- 🤖 توليد تقارير تحليلية ذكية بالذكاء الاصطناعي
+- 📊 عرض التقارير بتنسيق احترافي
+- 📄 تحميل التقارير كملفات PDF (دعم كامل للعربية)
+- 👥 إدارة المستخدمين والصلاحيات
+
+### المميزات الرئيسية
+
+| الميزة | الوصف |
+|--------|-------|
+| 🌐 **ثنائي اللغة** | دعم كامل للعربية والإنجليزية |
+| 🔐 **آمن** | مصادقة JWT + تشفير كلمات المرور |
+| 🚀 **سريع** | معالجة فورية للملفات |
+| 🤖 **ذكي** | تكامل مع Groq & Hugging Face |
+| 📱 **مرن** | REST API قابل للتوسع |
+
+---
+
+## 📂 هيكل المشروع
 
 ```
 server/
-├── index.js              # نقطة البداية الرئيسية
-├── config.env            # متغيرات البيئة
-├── models/               # نماذج قاعدة البيانات (MongoDB)
-│   ├── User.js          # نموذج المستخدم
-│   └── Report.js        # نموذج التقرير
-├── controllers/          # منطق معالجة الطلبات
-│   ├── authController.js
-│   ├── reportController.js
-│   └── aiController.js
-├── routes/               # تعريف المسارات (API Endpoints)
-│   ├── auth.js
-│   ├── reports.js
-│   └── ai.js
-├── middleware/           # وسيطات المصادقة والتحقق
-│   └── auth.js
-├── services/             # خدمات معالجة البيانات والذكاء الاصطناعي
-│   └── reportService.js
-├── utils/                # دوال مساعدة
-│   ├── responseHelper.js
-│   ├── userHelper.js
-│   └── reportHelper.js
-└── uploads/              # الملفات المرفوعة
-    ├── avatars/         # الصور الشخصية
-    └── *.csv, *.xlsx    # ملفات البيانات
+│
+├── 📄 index.js                      # نقطة الدخول الرئيسية
+├── 🔧 config.env                    # متغيرات البيئة
+│
+├── 📁 models/                       # نماذج MongoDB (Mongoose)
+│   ├── User.js                     # بيانات المستخدمين
+│   └── Report.js                   # بيانات التقارير
+│
+├── 📁 controllers/                  # منطق معالجة الطلبات
+│   ├── authController.js           # المصادقة والمستخدمين
+│   ├── reportController.js         # التقارير
+│   └── aiController.js             # الذكاء الاصطناعي
+│
+├── 📁 routes/                       # مسارات API
+│   ├── auth.js                     # /api/auth/*
+│   ├── reports.js                  # /api/reports/*
+│   └── ai.js                       # /api/ai/*
+│
+├── 📁 middleware/                   # وسيطات التحقق
+│   └── auth.js                     # JWT Authentication
+│
+├── 📁 services/                     # منطق العمليات المعقدة
+│   └── reportService.js            # معالجة الملفات + AI
+│
+├── 📁 utils/                        # دوال مساعدة قابلة لإعادة الاستخدام
+│   ├── responseHelper.js           # ردود API موحدة
+│   ├── userHelper.js               # عمليات المستخدمين
+│   └── reportHelper.js             # عمليات التقارير
+│
+└── 📁 uploads/                      # الملفات المرفوعة
+    ├── avatars/                    # الصور الشخصية
+    └── data files/                 # ملفات CSV/Excel
 ```
 
 ---
 
-## 1️⃣ نقطة البداية - `index.js`
+## 🧱 الطبقات الأساسية
 
-### الإعدادات الأساسية
+### معمارية MVC محسّنة
 
-```javascript
-// تحميل متغيرات البيئة من config.env
-require('dotenv').config({ path: './config.env' });
-
-// الاتصال بـ MongoDB
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('Connected to MongoDB'))
-  .catch(err => console.error('MongoDB connection error:', err));
-
-// إعداد Express Server
-const app = express();
-app.use(cors());                    // السماح بطلبات CORS
-app.use(express.json());            // تحليل JSON
-app.use('/uploads', express.static) // عرض الصور والملفات
-
-// تعريف المسارات الرئيسية
-app.use('/api/auth', authRoutes);      // مسارات المصادقة
-app.use('/api/reports', reportRoutes); // مسارات التقارير
-app.use('/api/ai', aiRoutes);          // مسارات الذكاء الاصطناعي
 ```
-
-### المميزات
-- ✅ معالجة الأخطاء المركزية
-- ✅ دعم رفع الملفات حتى 50MB
-- ✅ حماية CORS
-- ✅ عرض الملفات الثابتة
+┌─────────────────────────────────────────────────────────┐
+│                    CLIENT (React)                        │
+│                   HTTP Requests                          │
+└────────────────────────┬────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────┐
+│                     ROUTES LAYER                         │
+│  - تعريف المسارات (Endpoints)                           │
+│  - ربط المسارات بالـ Controllers                        │
+└────────────────────────┬────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────┐
+│                  MIDDLEWARE LAYER                        │
+│  - Authentication (JWT)                                  │
+│  - Authorization (User/Admin)                            │
+│  - Validation                                            │
+└────────────────────────┬────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────┐
+│                 CONTROLLERS LAYER                        │
+│  - استقبال البيانات من Request                          │
+│  - استدعاء Services المناسبة                           │
+│  - إرجاع Response                                       │
+└────────────────────────┬────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────┐
+│                  SERVICES LAYER                          │
+│  - منطق العمليات المعقدة                               │
+│  - معالجة الملفات                                       │
+│  - التكامل مع AI APIs                                   │
+│  - توليد PDF                                            │
+└────────────────────────┬────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────┐
+│                   MODELS LAYER                           │
+│  - تعريف البيانات (Schema)                             │
+│  - التحقق من صحة البيانات (Validation)                 │
+│  - التفاعل مع MongoDB                                   │
+└────────────────────────┬────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────┐
+│                     DATABASE                             │
+│                    MongoDB                               │
+└─────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## 2️⃣ النماذج (Models) - قاعدة البيانات
+## 🗄️ نماذج قاعدة البيانات
 
-### User Model - `models/User.js`
+### 1. User Model (`models/User.js`)
+
+**الهدف:** تخزين بيانات المستخدمين وإدارة المصادقة
 
 ```javascript
-const userSchema = new mongoose.Schema({
-  username: String,      // اسم المستخدم (فريد)
-  email: String,         // البريد الإلكتروني (فريد)
-  password: String,      // كلمة المرور (مشفرة بـ bcrypt)
-  firstName: String,     // الاسم الأول
-  lastName: String,      // الاسم الأخير
-  role: String,          // الدور: 'user' أو 'admin'
-  isActive: Boolean,     // هل الحساب مفعل؟
-  avatarUrl: String,     // رابط الصورة الشخصية
-  lastLogin: Date,       // آخر تسجيل دخول
-  createdAt: Date        // تاريخ الإنشاء
+{
+  _id: ObjectId,                    // معرف فريد
+  username: String (unique),        // اسم المستخدم
+  email: String (unique),           // البريد الإلكتروني
+  password: String (hashed),        // كلمة المرور المشفرة
+  firstName: String,                // الاسم الأول
+  lastName: String,                 // الاسم الأخير
+  role: String,                     // الدور: 'user' أو 'admin'
+  isActive: Boolean (default: true),// حالة الحساب
+  avatarUrl: String,                // رابط الصورة الشخصية
+  lastLogin: Date,                  // آخر تسجيل دخول
+  createdAt: Date (default: now)    // تاريخ الإنشاء
+}
+```
+
+#### الدوال المدمجة:
+
+```javascript
+// 1. مقارنة كلمة المرور
+userSchema.methods.comparePassword = async function(candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
+
+// 2. إخفاء كلمة المرور عند الإرجاع
+userSchema.methods.toJSON = function() {
+  const user = this.toObject();
+  delete user.password;
+  return user;
+};
+
+// 3. تشفير كلمة المرور تلقائياً قبل الحفظ
+userSchema.pre('save', async function(next) {
+  if (this.isModified('password')) {
+    this.password = await bcrypt.hash(this.password, 10);
+  }
+  next();
 });
 ```
 
-**الدوال المهمة:**
-- `comparePassword()` - التحقق من كلمة المرور
-- `toJSON()` - إخفاء كلمة المرور عند الإرجاع
-- Pre-save hook - تشفير كلمة المرور تلقائياً
-
-### Report Model - `models/Report.js`
+#### Indexes للأداء:
 
 ```javascript
-const reportSchema = new mongoose.Schema({
-  filename: String,         // اسم الملف المرفوع
-  filePath: String,         // مسار حفظ الملف
-  data: Array,              // البيانات المستخرجة (JSON Array)
-  prompt: String,           // طلب المستخدم للذكاء الاصطناعي
-  generatedReport: String,  // التقرير المُولد
-  status: String,           // الحالة: pending, processing, completed, error
-  userId: ObjectId,         // معرف المستخدم (ربط مع User)
-  isPublic: Boolean,        // هل التقرير عام؟
-  createdAt: Date,          // تاريخ الإنشاء
-  generatedAt: Date         // تاريخ التوليد
-});
+userSchema.index({ email: 1 });
+userSchema.index({ username: 1 });
+userSchema.index({ role: 1, isActive: 1 });
 ```
-
-**Indexes للأداء:**
-- `{ userId: 1, createdAt: -1 }` - للبحث السريع
-- `{ status: 1 }` - لفلترة الحالات
 
 ---
 
-## 3️⃣ المسارات (Routes) - API Endpoints
+### 2. Report Model (`models/Report.js`)
 
-### Authentication Routes - `routes/auth.js`
+**الهدف:** تخزين التقارير والبيانات المحللة
 
-#### المسارات العامة (بدون تسجيل دخول)
-```
-POST /api/auth/register           # تسجيل مستخدم جديد
-POST /api/auth/login              # تسجيل الدخول
-```
-
-#### المسارات المحمية (تحتاج Token)
-```
-GET  /api/auth/profile            # عرض الملف الشخصي
-PUT  /api/auth/profile            # تحديث البيانات الشخصية
-PUT  /api/auth/change-password    # تغيير كلمة المرور
-POST /api/auth/profile/avatar     # رفع صورة شخصية (5MB max)
-```
-
-#### مسارات الإدمن فقط
-```
-GET    /api/auth/admin/users        # عرض جميع المستخدمين
-POST   /api/auth/admin/users        # إنشاء مستخدم جديد
-PUT    /api/auth/admin/users/:id    # تحديث بيانات مستخدم
-DELETE /api/auth/admin/users/:id    # حذف مستخدم
+```javascript
+{
+  _id: ObjectId,                    // معرف فريد
+  filename: String (required),      // اسم الملف الأصلي
+  filePath: String,                 // مسار الملف على السيرفر
+  data: [Object],                   // البيانات المستخرجة (JSON)
+  prompt: String,                   // طلب المستخدم للـ AI
+  generatedReport: String,          // التقرير المولد (Markdown)
+  status: String,                   // pending | processing | completed | error
+  userId: ObjectId (ref: 'User'),   // صاحب التقرير
+  isPublic: Boolean (default: false), // هل التقرير عام؟
+  createdAt: Date (default: now),   // تاريخ الرفع
+  generatedAt: Date                 // تاريخ التوليد
+}
 ```
 
-### Report Routes - `routes/reports.js`
+#### حالات التقرير:
 
-#### مسارات التقارير (اختياري التسجيل)
+| الحالة | الوصف |
+|--------|-------|
+| `pending` | تم الرفع، في انتظار التحليل |
+| `processing` | جاري التحليل بالـ AI |
+| `completed` | تم التوليد بنجاح |
+| `error` | حدث خطأ |
+
+#### Indexes:
+
+```javascript
+reportSchema.index({ userId: 1, createdAt: -1 });
+reportSchema.index({ status: 1 });
+reportSchema.index({ isPublic: 1, status: 1 });
 ```
-POST   /api/reports/upload              # رفع ملف CSV/Excel (10MB max)
-POST   /api/reports/generate/:id        # توليد تقرير بالذكاء الاصطناعي
-GET    /api/reports/                    # عرض جميع التقارير
-GET    /api/reports/:id                 # عرض تقرير واحد
-GET    /api/reports/:id/download        # تحميل التقرير كـ PDF
-DELETE /api/reports/:id                 # حذف تقرير
+
+---
+
+## 🌐 API Endpoints
+
+### 🔐 Authentication Routes (`/api/auth`)
+
+#### مسارات عامة (Public)
+
+| Method | Endpoint | الوصف |
+|--------|----------|-------|
+| POST | `/api/auth/register` | تسجيل مستخدم جديد |
+| POST | `/api/auth/login` | تسجيل الدخول |
+
+**مثال - التسجيل:**
+```javascript
+POST /api/auth/register
+Content-Type: application/json
+
+{
+  "username": "ahmed_ali",
+  "email": "ahmed@example.com",
+  "password": "123456",
+  "firstName": "أحمد",
+  "lastName": "علي"
+}
+
+// Response:
+{
+  "success": true,
+  "message": "User registered successfully",
+  "data": {
+    "user": { ... },
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  }
+}
+```
+
+#### مسارات محمية (Authenticated)
+
+| Method | Endpoint | الوصف |
+|--------|----------|-------|
+| GET | `/api/auth/profile` | عرض الملف الشخصي |
+| PUT | `/api/auth/profile` | تحديث البيانات |
+| PUT | `/api/auth/change-password` | تغيير كلمة المرور |
+| POST | `/api/auth/profile/avatar` | رفع صورة شخصية |
+
+#### مسارات الإدمن (Admin Only)
+
+| Method | Endpoint | الوصف |
+|--------|----------|-------|
+| GET | `/api/auth/admin/users` | عرض جميع المستخدمين |
+| POST | `/api/auth/admin/users` | إنشاء مستخدم جديد |
+| PUT | `/api/auth/admin/users/:id` | تحديث مستخدم |
+| DELETE | `/api/auth/admin/users/:id` | حذف مستخدم |
+
+---
+
+### 📊 Reports Routes (`/api/reports`)
+
+#### مسارات التقارير
+
+| Method | Endpoint | الوصف | المصادقة |
+|--------|----------|-------|----------|
+| POST | `/api/reports/upload` | رفع ملف CSV/Excel | اختيارية |
+| POST | `/api/reports/generate/:id` | توليد تقرير بالـ AI | اختيارية |
+| GET | `/api/reports/` | عرض التقارير | اختيارية |
+| GET | `/api/reports/:id` | عرض تقرير واحد | اختيارية |
+| GET | `/api/reports/:id/download` | تحميل PDF | اختيارية |
+| DELETE | `/api/reports/:id` | حذف تقرير | مطلوبة |
+
+**مثال - رفع ملف:**
+```javascript
+POST /api/reports/upload
+Content-Type: multipart/form-data
+Authorization: Bearer <token> // اختياري
+
+file: data.csv (Max: 10MB)
+
+// Response:
+{
+  "success": true,
+  "data": {
+    "reportId": "6123abc...",
+    "filename": "sales_data.csv",
+    "recordCount": 150
+  }
+}
+```
+
+**مثال - توليد تقرير:**
+```javascript
+POST /api/reports/generate/6123abc...
+Content-Type: application/json
+Authorization: Bearer <token> // اختياري
+
+{
+  "prompt": "حلل بيانات المبيعات واعطني أهم الإحصائيات"
+}
+
+// Response:
+{
+  "success": true,
+  "data": {
+    "_id": "6123abc...",
+    "generatedReport": "# تحليل المبيعات\n\n## الإحصائيات...",
+    "status": "completed",
+    "generatedAt": "2025-10-08T..."
+  }
+}
 ```
 
 #### مسارات الإدمن
-```
-GET    /api/reports/admin/all           # عرض كل التقارير مع بيانات المستخدمين
-DELETE /api/reports/admin/:id           # حذف أي تقرير
-```
 
-### AI Routes - `routes/ai.js`
+| Method | Endpoint | الوصف |
+|--------|----------|-------|
+| GET | `/api/reports/admin/all` | عرض كل التقارير + بيانات المستخدمين |
+| DELETE | `/api/reports/admin/:id` | حذف أي تقرير |
 
-```
-POST /api/ai/chat                       # محادثة مع الذكاء الاصطناعي (إدمن فقط)
+---
+
+### 🤖 AI Routes (`/api/ai`)
+
+| Method | Endpoint | الوصف | الصلاحية |
+|--------|----------|-------|----------|
+| POST | `/api/ai/chat` | محادثة مباشرة مع AI | Admin فقط |
+
+**مثال:**
+```javascript
+POST /api/ai/chat
+Authorization: Bearer <admin_token>
+Content-Type: application/json
+
+{
+  "message": "ما هي أفضل طريقة لتحليل بيانات العملاء؟"
+}
+
+// Response:
+{
+  "success": true,
+  "data": {
+    "response": "أفضل طريقة لتحليل بيانات العملاء...",
+    "model": "llama-3.3-70b-versatile"
+  }
+}
 ```
 
 ---
 
-## 4️⃣ Controllers - منطق معالجة الطلبات
+## 🎮 المتحكمات (Controllers)
 
-### Auth Controller - `controllers/authController.js`
+### 1. Auth Controller (`controllers/authController.js`)
 
-```javascript
-register(req, res)
-  ↓ يستقبل: username, email, password, firstName, lastName
-  ↓ يتحقق من عدم وجود البريد/اسم المستخدم
-  ↓ ينشئ المستخدم (يشفر كلمة المرور تلقائياً)
-  ↓ يُنشئ JWT Token
-  ↓ يُرجع: { user, token }
+**المسؤولية:** إدارة المصادقة والمستخدمين
 
-login(req, res)
-  ↓ يستقبل: email, password
-  ↓ يبحث عن المستخدم بالبريد
-  ↓ يتحقق من كلمة المرور
-  ↓ يُحدث lastLogin
-  ↓ يُنشئ JWT Token
-  ↓ يُرجع: { user, token }
+#### أ) `register(req, res)`
 
-getProfile(req, res)
-  ↓ يُرجع بيانات المستخدم الحالي (من req.user)
+```
+الإدخال:
+  ↓ username, email, password, firstName, lastName
 
-updateProfile(req, res)
-  ↓ يحدث: firstName, lastName, username, email
-  ↓ يتحقق من عدم تكرار البريد/اسم المستخدم
-
-changePassword(req, res)
-  ↓ يتحقق من كلمة المرور القديمة
-  ↓ يحفظ كلمة المرور الجديدة (مشفرة)
+العملية:
+  1. التحقق من عدم تكرار البريد/اسم المستخدم
+  2. إنشاء المستخدم (كلمة المرور تُشفر تلقائياً)
+  3. إنشاء JWT Token
+  
+الإخراج:
+  ↓ { user, token }
 ```
 
-#### وظائف الإدمن
-
+**الكود:**
 ```javascript
-getAllUsers(req, res)
-  ↓ يُرجع جميع المستخدمين (مع فلاتر)
-
-createUserByAdmin(req, res)
-  ↓ ينشئ مستخدم جديد بدور محدد
-
-updateUserByAdmin(req, res)
-  ↓ يحدث بيانات أي مستخدم
-
-deleteUserByAdmin(req, res)
-  ↓ يحذف مستخدم (يتحقق أنه ليس إدمن)
+const register = async (req, res) => {
+  try {
+    // 1. استخراج البيانات
+    const { username, email, password, firstName, lastName } = req.body;
+    
+    // 2. التحقق من عدم التكرار
+    const existingUser = await checkUserExists(email, username);
+    if (existingUser) {
+      return sendError(res, 'User already exists', 400);
+    }
+    
+    // 3. إنشاء المستخدم
+    const user = await createUser({ username, email, password, firstName, lastName });
+    
+    // 4. إنشاء Token
+    const token = generateToken(user._id);
+    
+    // 5. الإرجاع
+    sendSuccess(res, { user, token }, 'User registered successfully', 201);
+  } catch (error) {
+    sendError(res, 'Registration failed', 500, error);
+  }
+};
 ```
 
-### Report Controller - `controllers/reportController.js`
+#### ب) `login(req, res)`
 
-```javascript
-uploadFile(req, res)
-  ↓ يستقبل ملف CSV/Excel
-  ↓ يتحقق من النوع والحجم
-  ↓ يحفظ الملف في /uploads
-  ↓ يعالجه بـ reportService.processFile()
-  ↓ يحفظ البيانات في MongoDB
-  ↓ يُرجع: { reportId, filename, recordCount }
+```
+الإدخال:
+  ↓ email, password
 
-generateAReport(req, res)
-  ↓ يستقبل: reportId, prompt
-  ↓ يجلب التقرير من قاعدة البيانات
-  ↓ يتحقق من ملكية التقرير
-  ↓ يستدعي reportService.generateReport()
-  ↓ يحفظ التقرير المُولد
-  ↓ يُرجع: التقرير الكامل
-
-downloadReport(req, res)
-  ↓ يجلب التقرير
-  ↓ يتحقق من وجود generatedReport
-  ↓ يستدعي reportService.generatePDF()
-  ↓ يُرسل ملف PDF للتحميل
-
-deleteReport(req, res)
-  ↓ يتحقق من ملكية التقرير
-  ↓ يحذفه من قاعدة البيانات
+العملية:
+  1. البحث عن المستخدم
+  2. التحقق من كلمة المرور
+  3. تحديث lastLogin
+  4. إنشاء Token
+  
+الإخراج:
+  ↓ { user, token }
 ```
 
-### AI Controller - `controllers/aiController.js`
+#### ج) `uploadAvatar(req, res)`
 
-```javascript
-chatWithAI(req, res)
-  ↓ يتحقق من صلاحيات الإدمن
-  ↓ يستقبل: message
-  ↓ يُرسل للـ Groq API (أو Hugging Face)
-  ↓ يُرجع: { response, model }
+```
+الإدخال:
+  ↓ File (image: jpg, png, gif)
+
+العملية:
+  1. حفظ الصورة في /uploads/avatars/
+  2. تحديث avatarUrl في قاعدة البيانات
+  3. حذف الصورة القديمة (إن وجدت)
+  
+الإخراج:
+  ↓ { avatarUrl }
 ```
 
 ---
 
-## 5️⃣ Services - خدمات معالجة البيانات
+### 2. Report Controller (`controllers/reportController.js`)
 
-### Report Service - `services/reportService.js`
+**المسؤولية:** إدارة التقارير
 
-هذا أهم ملف في المشروع!
+#### أ) `uploadFile(req, res)`
+
+```
+الإدخال:
+  ↓ File (CSV/Excel, Max: 10MB)
+
+العملية:
+  1. التحقق من نوع الملف
+  2. حفظ الملف في /uploads/
+  3. معالجة الملف → استخراج البيانات
+  4. حفظ في قاعدة البيانات
+  
+الإخراج:
+  ↓ { reportId, filename, recordCount }
+```
+
+**التدفق:**
+```javascript
+uploadFile()
+  ↓
+Multer Middleware (حفظ الملف)
+  ↓
+reportService.processFile(filePath)
+  ├─ CSV? → قراءة وتحليل النص
+  └─ Excel? → استخدام XLSX library
+  ↓
+تحويل إلى JSON Array
+  ↓
+Report.create({ filename, filePath, data })
+  ↓
+return reportId
+```
+
+#### ب) `generateAReport(req, res)`
+
+```
+الإدخال:
+  ↓ reportId, prompt
+
+العملية:
+  1. جلب التقرير من DB
+  2. التحقق من الملكية (إن كان مسجلاً)
+  3. استدعاء AI API
+  4. حفظ النتيجة
+  
+الإخراج:
+  ↓ { report (مع generatedReport) }
+```
+
+**التدفق:**
+```javascript
+generateAReport()
+  ↓
+Report.findById(reportId)
+  ↓
+checkReportOwnership() // إن كان authenticated
+  ↓
+reportService.generateReport(report.data, prompt)
+  ├─ إنشاء Prompt مفصل
+  ├─ إرسال لـ Groq API
+  ├─ في حالة الفشل → generateFallbackReport()
+  └─ الإرجاع: تقرير نصي (Markdown)
+  ↓
+Report.update({ generatedReport, status: 'completed' })
+  ↓
+return report
+```
+
+#### ج) `downloadReport(req, res)`
+
+```
+الإدخال:
+  ↓ reportId
+
+العملية:
+  1. جلب التقرير
+  2. التحقق من وجود generatedReport
+  3. تحويل Markdown → HTML
+  4. توليد PDF
+  
+الإخراج:
+  ↓ PDF File Stream
+```
+
+---
+
+### 3. AI Controller (`controllers/aiController.js`)
+
+**المسؤولية:** التفاعل المباشر مع AI
+
+#### `chatWithAI(req, res)`
+
+```
+الإدخال:
+  ↓ message (سؤال المستخدم)
+
+العملية:
+  1. التحقق من صلاحيات الإدمن
+  2. إرسال للـ AI API
+  3. الإرجاع
+  
+الإخراج:
+  ↓ { response, model }
+```
+
+**الكود:**
+```javascript
+const chatWithAI = async (req, res) => {
+  try {
+    // 1. التحقق من الصلاحيات
+    checkAdminAccess(req.user);
+    
+    // 2. استخراج الرسالة
+    const { message } = req.body;
+    
+    // 3. إرسال للـ AI
+    const response = await axios.post('https://api.groq.com/openai/v1/chat/completions', {
+      model: 'llama-3.3-70b-versatile',
+      messages: [{ role: 'user', content: message }]
+    }, {
+      headers: {
+        'Authorization': `Bearer ${process.env.GROQ_API_KEY}`
+      }
+    });
+    
+    // 4. الإرجاع
+    sendSuccess(res, {
+      response: response.data.choices[0].message.content,
+      model: 'llama-3.3-70b-versatile'
+    });
+  } catch (error) {
+    sendError(res, 'AI chat failed', 500, error);
+  }
+};
+```
+
+---
+
+## ⚙️ الخدمات (Services)
+
+### Report Service (`services/reportService.js`)
+
+**الأهم في المشروع!** يحتوي على كل منطق معالجة البيانات والـ AI.
+
+---
 
 #### 1. معالجة الملفات
 
+##### `processFile(filePath)`
+
+**الهدف:** قراءة ملف CSV أو Excel وتحويله لـ JSON
+
 ```javascript
-processFile(filePath)
-  ↓ يتحقق من نوع الملف (.csv, .xlsx, .xls)
-  ↓ CSV: يقرأ النص ويحوله لـ JSON
-  ↓ Excel: يستخدم مكتبة XLSX
-  ↓ يُرجع: Array of Objects
+async function processFile(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  
+  if (ext === '.csv') {
+    return await processCSV(filePath);
+  } else if (ext === '.xlsx' || ext === '.xls') {
+    return await processExcel(filePath);
+  } else {
+    throw new Error('Unsupported file format');
+  }
+}
 ```
 
-**مثال:**
+**مثال - ملف CSV:**
 ```
-ملف CSV:
-Name,Age,Score
-Ahmed,25,90
-Sara,22,85
+Input (sales.csv):
+Product,Price,Quantity
+Laptop,1200,5
+Phone,800,10
+Tablet,600,8
 
-يتحول إلى:
+↓ processFile() ↓
+
+Output (JSON):
 [
-  { Name: "Ahmed", Age: "25", Score: "90" },
-  { Name: "Sara", Age: "22", Score: "85" }
+  { "Product": "Laptop", "Price": "1200", "Quantity": "5" },
+  { "Product": "Phone", "Price": "800", "Quantity": "10" },
+  { "Product": "Tablet", "Price": "600", "Quantity": "8" }
 ]
 ```
 
+---
+
 #### 2. توليد التقارير بالذكاء الاصطناعي
 
-```javascript
-generateReport(data, prompt)
-  ↓ يتحقق من وجود API Key
-  ↓ يأخذ أول 30 سجل كعينة
-  ↓ يُنشئ Prompt مفصل:
-     - طلب المستخدم
-     - بيانات العينة
-     - تعليمات التحليل
-     - طلب التقرير بالعربية والإنجليزية
-  ↓ يُرسل لـ Groq API (llama-3.3-70b)
-  ↓ إن فشل، يستخدم generateFallbackReport()
-  ↓ يُرجع: التقرير النصي (Markdown)
-```
+##### `generateReport(data, prompt)`
 
-**هيكل الـ Prompt:**
-```
-أنت محلل بيانات محترف...
-
-طلب المستخدم: "ما هو متوسط الدرجات؟"
-
-البيانات:
-- إجمالي السجلات: 200
-- عينة: [...]
-
-المطلوب:
-1. اكتب التحليل الكامل بالعربية
-2. ثم اكتب نفس التحليل بالإنجليزية
-```
-
-#### 3. التقرير الاحتياطي (Fallback)
+**الهدف:** استخدام AI لتحليل البيانات وتوليد تقرير شامل
 
 ```javascript
-generateFallbackReport(data, prompt)
-  ↓ يُستخدم عند فشل الـ API
-  ↓ يُنشئ تحليل إحصائي بسيط:
-     - عدد السجلات
-     - الأعمدة
-     - إحصائيات رقمية (متوسط، أعلى، أقل)
-  ↓ بالعربية والإنجليزية
+async function generateReport(data, prompt) {
+  try {
+    // 1. أخذ عينة من البيانات (أول 30 سجل)
+    const dataSample = data.slice(0, 30);
+    
+    // 2. إنشاء Prompt مفصل
+    const fullPrompt = `
+أنت محلل بيانات محترف متخصص في تحليل البيانات وإنشاء تقارير شاملة.
+
+📋 طلب المستخدم:
+${prompt}
+
+📊 البيانات المتاحة:
+- إجمالي السجلات: ${data.length}
+- عينة من البيانات:
+${JSON.stringify(dataSample, null, 2)}
+
+📝 المطلوب منك:
+1. قم بتحليل البيانات بشكل شامل
+2. أجب على طلب المستخدم بدقة
+3. قدم رؤى وإحصائيات مفيدة
+4. اكتب التقرير بتنسيق احترافي
+
+⚠️ مهم جداً:
+- اكتب التقرير الكامل بالعربية أولاً
+- ثم اكتب نفس التقرير بالإنجليزية
+- استخدم عناوين واضحة
+- أضف أرقام وإحصائيات دقيقة
+`;
+
+    // 3. إرسال للـ Groq API
+    const response = await axios.post(
+      'https://api.groq.com/openai/v1/chat/completions',
+      {
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          {
+            role: 'system',
+            content: 'أنت محلل بيانات خبير. قم بإنشاء تقارير دقيقة وشاملة بالعربية والإنجليزية.'
+          },
+          {
+            role: 'user',
+            content: fullPrompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 2000
+      },
+      {
+        headers: {
+          'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+          'Content-Type': 'application/json'
+        }
+      }
+    );
+    
+    // 4. استخراج النتيجة
+    return response.data.choices[0].message.content;
+    
+  } catch (error) {
+    console.error('AI generation failed, using fallback');
+    return generateFallbackReport(data, prompt);
+  }
+}
 ```
+
+---
+
+#### 3. التقرير الاحتياطي
+
+##### `generateFallbackReport(data, prompt)`
+
+**الهدف:** توليد تقرير إحصائي بسيط عند فشل الـ AI
+
+```javascript
+function generateFallbackReport(data, prompt) {
+  // 1. إحصائيات أساسية
+  const totalRecords = data.length;
+  const columns = Object.keys(data[0] || {});
+  
+  // 2. إحصائيات رقمية
+  const numericColumns = columns.filter(col => {
+    return !isNaN(parseFloat(data[0][col]));
+  });
+  
+  const stats = {};
+  numericColumns.forEach(col => {
+    const values = data.map(row => parseFloat(row[col])).filter(v => !isNaN(v));
+    stats[col] = {
+      avg: (values.reduce((a, b) => a + b, 0) / values.length).toFixed(2),
+      max: Math.max(...values),
+      min: Math.min(...values)
+    };
+  });
+  
+  // 3. إنشاء التقرير
+  return `
+# 📊 تقرير تحليلي - ${new Date().toLocaleDateString('ar-EG')}
+
+## الإحصائيات العامة
+- إجمالي السجلات: **${totalRecords}**
+- عدد الأعمدة: **${columns.length}**
+- الأعمدة: ${columns.join(', ')}
+
+## التحليل الإحصائي
+
+${numericColumns.map(col => `
+### ${col}
+- المتوسط: ${stats[col].avg}
+- الأعلى: ${stats[col].max}
+- الأقل: ${stats[col].min}
+`).join('\n')}
+
+## الخلاصة
+تم تحليل البيانات بنجاح. البيانات تحتوي على ${totalRecords} سجل مع ${columns.length} عمود.
+
+---
+
+# 📊 Analytical Report - ${new Date().toLocaleDateString('en-US')}
+
+## General Statistics
+- Total Records: **${totalRecords}**
+- Number of Columns: **${columns.length}**
+- Columns: ${columns.join(', ')}
+
+## Statistical Analysis
+
+${numericColumns.map(col => `
+### ${col}
+- Average: ${stats[col].avg}
+- Maximum: ${stats[col].max}
+- Minimum: ${stats[col].min}
+`).join('\n')}
+
+## Conclusion
+Data analyzed successfully. The dataset contains ${totalRecords} records with ${columns.length} columns.
+`;
+}
+```
+
+---
 
 #### 4. توليد PDF
 
+##### `generatePDF(reportContent)`
+
+**الهدف:** تحويل التقرير النصي إلى PDF احترافي مع دعم كامل للعربية
+
 ```javascript
-generatePDF(report)
-  ↓ يحول التقرير النصي (Markdown) لـ HTML
-  ↓ يضيف CSS للتنسيق:
-     - دعم العربية والإنجليزية
-     - RTL/LTR تلقائي
-     - تنسيق جميل
-  ↓ يستخدم html-pdf-node
-  ↓ يُرجع: PDF Buffer
+async function generatePDF(reportContent) {
+  // 1. تحويل Markdown إلى HTML
+  const htmlContent = marked.parse(reportContent);
+  
+  // 2. إضافة CSS للتنسيق
+  const styledHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      line-height: 1.8;
+      color: #333;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px;
+    }
+    
+    /* دعم العربية */
+    [dir="rtl"] {
+      direction: rtl;
+      text-align: right;
+    }
+    
+    h1 {
+      color: #2c3e50;
+      border-bottom: 3px solid #3498db;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+    }
+    
+    h2 {
+      color: #34495e;
+      margin-top: 30px;
+      border-left: 4px solid #3498db;
+      padding-left: 10px;
+    }
+    
+    h3 {
+      color: #7f8c8d;
+      margin-top: 20px;
+    }
+    
+    p {
+      margin: 15px 0;
+    }
+    
+    strong {
+      color: #e74c3c;
+      font-weight: bold;
+    }
+    
+    ul, ol {
+      margin: 15px 0;
+      padding-right: 30px;
+    }
+    
+    li {
+      margin: 8px 0;
+    }
+  </style>
+</head>
+<body dir="rtl">
+  ${htmlContent}
+</body>
+</html>
+`;
+
+  // 3. توليد PDF
+  const options = {
+    format: 'A4',
+    margin: {
+      top: '20mm',
+      right: '20mm',
+      bottom: '20mm',
+      left: '20mm'
+    }
+  };
+  
+  const file = { content: styledHtml };
+  const pdfBuffer = await htmlPdfNode.generatePdf(file, options);
+  
+  return pdfBuffer;
+}
 ```
 
-**مثال HTML:**
-```html
-<div style="direction: rtl; font-family: Arial;">
-  <h1>التقرير التحليلي</h1>
-  <p>هذا تحليل شامل...</p>
-</div>
-<div style="direction: ltr; font-family: Arial;">
-  <h1>Analytical Report</h1>
-  <p>This is a comprehensive analysis...</p>
-</div>
+**نتيجة PDF:**
+- ✅ دعم كامل للعربية والإنجليزية
+- ✅ تنسيق احترافي
+- ✅ RTL تلقائي للعربية
+- ✅ ألوان وعناوين واضحة
+
+---
+
+## 🛡️ الوسيطات (Middleware)
+
+### Auth Middleware (`middleware/auth.js`)
+
+**الهدف:** التحقق من هوية المستخدم وصلاحياته
+
+---
+
+#### 1. `generateToken(userId)`
+
+**إنشاء JWT Token**
+
+```javascript
+function generateToken(userId) {
+  return jwt.sign(
+    { userId },
+    process.env.JWT_SECRET,
+    { expiresIn: '7d' }  // صالح لمدة 7 أيام
+  );
+}
+```
+
+**مثال Token:**
+```
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MTIzYWJjIiwiaWF0IjoxNjk...
 ```
 
 ---
 
-## 6️⃣ Middleware - وسيطات التحقق
+#### 2. `authenticate(req, res, next)`
 
-### Auth Middleware - `middleware/auth.js`
+**التحقق من المصادقة (مطلوب)**
 
 ```javascript
-generateToken(userId)
-  ↓ ينشئ JWT Token
-  ↓ صالح لمدة 7 أيام
-  ↓ يُرجع: Token String
+async function authenticate(req, res, next) {
+  try {
+    // 1. استخراج Token من Header
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    
+    if (!token) {
+      return sendError(res, 'Authentication required', 401);
+    }
+    
+    // 2. التحقق من صحة Token
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // 3. جلب المستخدم
+    const user = await User.findById(decoded.userId);
+    
+    if (!user || !user.isActive) {
+      return sendError(res, 'User not found or inactive', 401);
+    }
+    
+    // 4. إضافة المستخدم إلى Request
+    req.user = user;
+    next();
+    
+  } catch (error) {
+    sendError(res, 'Invalid token', 401);
+  }
+}
+```
 
-authenticate(req, res, next)
-  ↓ يستخرج Token من Header: "Authorization: Bearer <token>"
-  ↓ يتحقق من صحة Token
-  ↓ يجلب المستخدم من قاعدة البيانات
-  ↓ يحمله في req.user
-  ↓ إن فشل: يُرجع 401 Unauthorized
-
-optionalAuth(req, res, next)
-  ↓ نفس authenticate
-  ↓ لكن لا يفشل إن لم يُوجد Token
-  ↓ يُستخدم للمسارات التي تعمل مع/بدون تسجيل دخول
-
-authorizeAdmin(req, res, next)
-  ↓ يتحقق أن req.user.role === 'admin'
-  ↓ إن لم يكن: يُرجع 403 Forbidden
+**التدفق:**
+```
+Client Request
+  ↓
+Header: "Authorization: Bearer <token>"
+  ↓
+authenticate() Middleware
+  ├─ استخراج Token
+  ├─ التحقق من صحته
+  ├─ جلب المستخدم من DB
+  └─ req.user = user
+  ↓
+Controller يستخدم req.user
 ```
 
 ---
 
-## 7️⃣ Utils - دوال مساعدة
+#### 3. `optionalAuth(req, res, next)`
 
-### Response Helper - `utils/responseHelper.js`
+**مصادقة اختيارية (للمسارات المختلطة)**
 
 ```javascript
-sendSuccess(res, data, message, statusCode)
-  // يُرسل رد موحد للنجاح
-  { success: true, message, data }
-
-sendError(res, message, statusCode, error)
-  // يُرسل رد موحد للخطأ
-  { success: false, message, error }
-
-asyncHandler(fn)
-  // يلتقط الأخطاء تلقائياً في async functions
-
-validateRequiredFields(fields, data)
-  // يتحقق من وجود الحقول المطلوبة
+async function optionalAuth(req, res, next) {
+  try {
+    const token = req.headers.authorization?.replace('Bearer ', '');
+    
+    if (token) {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      const user = await User.findById(decoded.userId);
+      
+      if (user && user.isActive) {
+        req.user = user;
+      }
+    }
+    
+    // نستمر حتى لو لم يكن هناك token
+    next();
+    
+  } catch (error) {
+    // تجاهل الأخطاء والاستمرار
+    next();
+  }
+}
 ```
 
-### User Helper - `utils/userHelper.js`
+**متى نستخدمه؟**
+- التقارير العامة (يمكن رؤيتها بدون تسجيل)
+- API يعمل مع/بدون مصادقة
+
+---
+
+#### 4. `authorizeAdmin(req, res, next)`
+
+**التحقق من صلاحيات الإدمن**
 
 ```javascript
-checkUserExists(email, username, excludeUserId)
-  // يتحقق من وجود المستخدم
-  // يُستخدم قبل التسجيل/التحديث
-
-createUser(userData)
-  // ينشئ مستخدم جديد
-  // يتحقق من عدم التكرار
-  // يُستخدم في register و createUserByAdmin
+function authorizeAdmin(req, res, next) {
+  if (!req.user) {
+    return sendError(res, 'Authentication required', 401);
+  }
+  
+  if (req.user.role !== 'admin') {
+    return sendError(res, 'Admin access required', 403);
+  }
+  
+  next();
+}
 ```
 
-### Report Helper - `utils/reportHelper.js`
-
+**الاستخدام:**
 ```javascript
-checkReportOwnership(report, userId)
-  // يتحقق من ملكية التقرير
-  // يرمي خطأ إن لم يكن المالك
-
-checkAdminAccess(user)
-  // يتحقق من صلاحيات الإدمن
-  // يرمي خطأ إن لم يكن إدمن
-
-findReportById(reportId, populateUser)
-  // يجلب التقرير بالـ ID
-  // يمكن تحميل بيانات المستخدم معه
+// في routes/auth.js
+router.get('/admin/users', 
+  authenticate,      // تأكد من المصادقة
+  authorizeAdmin,    // تأكد من الصلاحيات
+  getAllUsers        // نفذ العملية
+);
 ```
 
 ---
 
-## 📊 تدفق البيانات الكامل
+## 🔧 الدوال المساعدة (Utils)
 
-### مثال 1: رفع ملف وتوليد تقرير
+### 1. Response Helper (`utils/responseHelper.js`)
 
-```
-┌─────────────────┐
-│  المستخدم      │
-│  يرفع ملف CSV  │
-└────────┬────────┘
-         ↓
-┌────────────────────────────┐
-│ POST /api/reports/upload   │
-│ Multer يحفظ في /uploads    │
-└────────┬───────────────────┘
-         ↓
-┌──────────────────────────────┐
-│ reportController.uploadFile()│
-│ reportService.processFile()  │
-│ - يقرأ CSV                   │
-│ - يحول لـ JSON               │
-└────────┬─────────────────────┘
-         ↓
-┌──────────────────────────┐
-│ حفظ في MongoDB           │
-│ Report { data: [...] }   │
-└────────┬─────────────────┘
-         ↓
-┌──────────────────────────┐
-│ إرجاع reportId          │
-└────────┬─────────────────┘
-         ↓
-┌──────────────────────────────────┐
-│ المستخدم يطلب توليد تقرير       │
-│ POST /api/reports/generate/:id  │
-│ Body: { prompt: "..." }         │
-└────────┬─────────────────────────┘
-         ↓
-┌────────────────────────────────────┐
-│ reportController.generateAReport() │
-│ reportService.generateReport()     │
-│ - يُرسل لـ Groq API               │
-│ - Prompt + Data Sample            │
-└────────┬───────────────────────────┘
-         ↓
-┌──────────────────────────────┐
-│ Groq API يُحلل ويُولد       │
-│ تقرير بالعربية والإنجليزية │
-└────────┬─────────────────────┘
-         ↓
-┌──────────────────────────┐
-│ حفظ التقرير في DB        │
-│ status: 'completed'      │
-└────────┬─────────────────┘
-         ↓
-┌──────────────────────────┐
-│ إرجاع التقرير للمستخدم  │
-└──────────────────────────┘
+**الهدف:** توحيد شكل الردود من الـ API
+
+```javascript
+// ✅ رد النجاح
+function sendSuccess(res, data, message = 'Success', statusCode = 200) {
+  res.status(statusCode).json({
+    success: true,
+    message,
+    data
+  });
+}
+
+// ❌ رد الخطأ
+function sendError(res, message = 'Error', statusCode = 500, error = null) {
+  res.status(statusCode).json({
+    success: false,
+    message,
+    error: error?.message || error
+  });
+}
+
+// 🔄 معالج async تلقائي
+function asyncHandler(fn) {
+  return (req, res, next) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
+}
+
+// ✔️ التحقق من الحقول المطلوبة
+function validateRequiredFields(fields, data) {
+  const missing = fields.filter(field => !data[field]);
+  if (missing.length > 0) {
+    throw new Error(`Missing required fields: ${missing.join(', ')}`);
+  }
+}
 ```
 
-### مثال 2: تحميل PDF
+**الاستخدام:**
+```javascript
+// في controller
+sendSuccess(res, { user }, 'Login successful');
+// → { success: true, message: "Login successful", data: { user } }
 
-```
-┌─────────────────────────────────┐
-│ GET /api/reports/:id/download   │
-└────────┬────────────────────────┘
-         ↓
-┌──────────────────────────────────┐
-│ reportController.downloadReport()│
-│ - جلب التقرير من DB              │
-│ - التحقق من الملكية              │
-└────────┬─────────────────────────┘
-         ↓
-┌──────────────────────────────┐
-│ reportService.generatePDF()  │
-│ - تحويل Markdown → HTML      │
-│ - إضافة CSS                  │
-│ - دعم العربية                │
-└────────┬─────────────────────┘
-         ↓
-┌──────────────────────────┐
-│ html-pdf-node            │
-│ توليد PDF Buffer         │
-└────────┬─────────────────┘
-         ↓
-┌──────────────────────────┐
-│ إرسال الملف للتحميل     │
-│ Content-Type: pdf        │
-└──────────────────────────┘
-```
-
-### مثال 3: نظام المصادقة
-
-```
-┌──────────────────────┐
-│ POST /api/auth/login │
-│ { email, password }  │
-└────────┬─────────────┘
-         ↓
-┌────────────────────────────┐
-│ authController.login()     │
-│ - البحث عن المستخدم       │
-│ - التحقق من كلمة المرور   │
-└────────┬───────────────────┘
-         ↓
-┌────────────────────────────┐
-│ generateToken(userId)      │
-│ JWT صالح لـ 7 أيام        │
-└────────┬───────────────────┘
-         ↓
-┌────────────────────────────┐
-│ إرجاع { user, token }     │
-└────────┬───────────────────┘
-         ↓
-┌────────────────────────────────┐
-│ Client يحفظ في localStorage  │
-│ localStorage.setItem('token') │
-└────────┬───────────────────────┘
-         ↓
-┌─────────────────────────────────┐
-│ في كل طلب:                     │
-│ Header: "Authorization: Bearer" │
-└────────┬────────────────────────┘
-         ↓
-┌────────────────────────────┐
-│ middleware/authenticate    │
-│ - استخراج Token           │
-│ - التحقق منه              │
-│ - تحميل المستخدم في req  │
-└────────┬───────────────────┘
-         ↓
-┌────────────────────────┐
-│ Controller يستخدم     │
-│ req.user               │
-└────────────────────────┘
+sendError(res, 'Invalid credentials', 401);
+// → { success: false, message: "Invalid credentials" }
 ```
 
 ---
 
-## 🔐 نظام الأمان
+### 2. User Helper (`utils/userHelper.js`)
+
+**الهدف:** عمليات مشتركة للمستخدمين
+
+```javascript
+// التحقق من وجود مستخدم
+async function checkUserExists(email, username, excludeUserId = null) {
+  const query = {
+    $or: [{ email }, { username }]
+  };
+  
+  if (excludeUserId) {
+    query._id = { $ne: excludeUserId };
+  }
+  
+  return await User.findOne(query);
+}
+
+// إنشاء مستخدم جديد
+async function createUser(userData) {
+  // التحقق من عدم التكرار
+  const exists = await checkUserExists(userData.email, userData.username);
+  if (exists) {
+    throw new Error('User already exists');
+  }
+  
+  // إنشاء المستخدم
+  const user = new User(userData);
+  await user.save();
+  
+  return user;
+}
+```
+
+---
+
+### 3. Report Helper (`utils/reportHelper.js`)
+
+**الهدف:** عمليات مشتركة للتقارير
+
+```javascript
+// التحقق من ملكية التقرير
+function checkReportOwnership(report, userId) {
+  if (report.userId.toString() !== userId.toString()) {
+    throw new Error('Unauthorized access to report');
+  }
+}
+
+// التحقق من صلاحيات الإدمن
+function checkAdminAccess(user) {
+  if (!user || user.role !== 'admin') {
+    throw new Error('Admin access required');
+  }
+}
+
+// جلب تقرير بالـ ID
+async function findReportById(reportId, populateUser = false) {
+  let query = Report.findById(reportId);
+  
+  if (populateUser) {
+    query = query.populate('userId', 'firstName lastName email avatarUrl');
+  }
+  
+  const report = await query;
+  
+  if (!report) {
+    throw new Error('Report not found');
+  }
+  
+  return report;
+}
+```
+
+---
+
+## 🔄 تدفق البيانات
+
+### سيناريو كامل: من الرفع إلى التحميل
+
+```
+┌─────────────────────────────────────────────────────────┐
+│ 1️⃣ المستخدم يرفع ملف CSV                               │
+│    POST /api/reports/upload                             │
+│    File: sales_data.csv (150 records)                   │
+└────────────────────────┬────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────┐
+│ 2️⃣ Multer Middleware                                    │
+│    - حفظ الملف في /uploads/1696789012-sales_data.csv   │
+│    - التحقق من الحجم والنوع                            │
+└────────────────────────┬────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────┐
+│ 3️⃣ reportController.uploadFile()                        │
+│    - استدعاء reportService.processFile()               │
+└────────────────────────┬────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────┐
+│ 4️⃣ reportService.processFile()                          │
+│    CSV:                                                 │
+│    Product,Price,Quantity                               │
+│    Laptop,1200,5                                        │
+│    ↓                                                    │
+│    JSON:                                                │
+│    [{ Product: "Laptop", Price: "1200", ... }]          │
+└────────────────────────┬────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────┐
+│ 5️⃣ حفظ في MongoDB                                      │
+│    Report.create({                                      │
+│      filename: "sales_data.csv",                        │
+│      data: [...],                                       │
+│      status: "pending",                                 │
+│      userId: req.user?._id                              │
+│    })                                                   │
+└────────────────────────┬────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────┐
+│ 6️⃣ رد للمستخدم                                         │
+│    {                                                    │
+│      success: true,                                     │
+│      data: {                                            │
+│        reportId: "6123abc...",                          │
+│        filename: "sales_data.csv",                      │
+│        recordCount: 150                                 │
+│      }                                                  │
+│    }                                                    │
+└────────────────────────┬────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────┐
+│ 7️⃣ المستخدم يطلب توليد تقرير                          │
+│    POST /api/reports/generate/6123abc...                │
+│    { prompt: "حلل بيانات المبيعات" }                   │
+└────────────────────────┬────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────┐
+│ 8️⃣ reportController.generateAReport()                   │
+│    - جلب التقرير من DB                                 │
+│    - التحقق من الملكية                                 │
+│    - تحديث status: "processing"                        │
+└────────────────────────┬────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────┐
+│ 9️⃣ reportService.generateReport()                       │
+│    - بناء Prompt مفصل:                                 │
+│      * طلب المستخدم                                    │
+│      * عينة من البيانات (30 سجل)                      │
+│      * تعليمات التحليل                                 │
+│    - إرسال لـ Groq API                                 │
+└────────────────────────┬────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────┐
+│ 🔟 Groq API (Llama 3.3 70B)                             │
+│    - تحليل البيانات                                    │
+│    - توليد تقرير بالعربية                             │
+│    - توليد نفس التقرير بالإنجليزية                    │
+│    - إرجاع النص (Markdown)                             │
+└────────────────────────┬────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────┐
+│ 1️⃣1️⃣ حفظ التقرير في DB                                │
+│    Report.update({                                      │
+│      generatedReport: "# تحليل المبيعات...",           │
+│      status: "completed",                               │
+│      generatedAt: new Date()                            │
+│    })                                                   │
+└────────────────────────┬────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────┐
+│ 1️⃣2️⃣ رد للمستخدم                                       │
+│    {                                                    │
+│      success: true,                                     │
+│      data: {                                            │
+│        _id: "6123abc...",                               │
+│        generatedReport: "# تحليل...",                   │
+│        status: "completed"                              │
+│      }                                                  │
+│    }                                                    │
+└────────────────────────┬────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────┐
+│ 1️⃣3️⃣ المستخدم يطلب تحميل PDF                          │
+│    GET /api/reports/6123abc.../download                 │
+└────────────────────────┬────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────┐
+│ 1️⃣4️⃣ reportService.generatePDF()                        │
+│    - Markdown → HTML                                    │
+│    - إضافة CSS (RTL للعربية)                          │
+│    - html-pdf-node → PDF Buffer                         │
+└────────────────────────┬────────────────────────────────┘
+                         ↓
+┌─────────────────────────────────────────────────────────┐
+│ 1️⃣5️⃣ إرسال PDF للتحميل                                │
+│    Content-Type: application/pdf                        │
+│    Content-Disposition: attachment; filename="..."      │
+│    Body: PDF Buffer                                     │
+└─────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 🔐 الأمان
 
 ### 1. تشفير كلمات المرور
-- استخدام `bcryptjs` مع salt rounds = 10
-- التشفير التلقائي قبل الحفظ (pre-save hook)
-- عدم إرجاع كلمة المرور في الـ API
 
-### 2. JWT Authentication
-- Tokens صالحة لـ 7 أيام
-- التحقق في كل طلب
-- إلغاء الصلاحية عند تعطيل الحساب
+```javascript
+// Pre-save hook في User Model
+userSchema.pre('save', async function(next) {
+  if (this.isModified('password')) {
+    this.password = await bcrypt.hash(this.password, 10);
+  }
+  next();
+});
 
-### 3. الصلاحيات (Authorization)
-- User: يرى ويُعدل بياناته فقط
-- Admin: وصول كامل
+// مقارنة كلمة المرور
+userSchema.methods.comparePassword = async function(candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
+```
 
-### 4. التحقق من المدخلات
-- Mongoose schema validation
-- File type validation (CSV/Excel فقط)
-- File size limits (10MB للبيانات، 5MB للصور)
-- Email format validation
+**كيف يعمل؟**
+```
+Input: "mypassword123"
+  ↓
+bcrypt.hash() with 10 salt rounds
+  ↓
+Output: "$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy"
+  ↓
+يُحفظ في قاعدة البيانات
+```
 
 ---
 
-## 🎯 الميزات الرئيسية
+### 2. JWT Authentication
 
-### ✅ نظام المستخدمين
-- تسجيل وتسجيل دخول
-- ملف شخصي كامل
-- صور شخصية
-- تغيير كلمة المرور
-- أدوار (User/Admin)
+```javascript
+// إنشاء Token
+const token = jwt.sign(
+  { userId: user._id },
+  process.env.JWT_SECRET,
+  { expiresIn: '7d' }
+);
 
-### ✅ معالجة الملفات
-- رفع CSV/Excel
-- استخراج البيانات تلقائياً
-- دعم ملفات حتى 10MB
-- تخزين آمن
+// التحقق من Token
+const decoded = jwt.verify(token, process.env.JWT_SECRET);
+// → { userId: "6123abc...", iat: 1696789012, exp: 1697393812 }
+```
 
-### ✅ الذكاء الاصطناعي
-- تكامل مع Groq API (Llama 3.3 70B)
-- تكامل مع Hugging Face (احتياطي)
-- تقارير ثنائية اللغة (عربي/إنجليزي)
-- نظام Fallback عند فشل الـ API
+**دورة حياة Token:**
+```
+1. المستخدم يسجل دخول
+   ↓
+2. السيرفر ينشئ Token (صالح 7 أيام)
+   ↓
+3. Client يحفظه في localStorage
+   ↓
+4. في كل طلب: Header: "Authorization: Bearer <token>"
+   ↓
+5. السيرفر يتحقق من Token
+   ↓
+6. إن صحيح: يكمل الطلب
+   إن خطأ: يُرجع 401 Unauthorized
+```
 
-### ✅ التقارير
-- توليد تلقائي
-- حفظ في قاعدة البيانات
-- تحميل كـ PDF
-- دعم كامل للعربية في PDF
+---
 
-### ✅ لوحة تحكم الإدمن
-- إدارة المستخدمين (CRUD)
-- عرض جميع التقارير
-- حذف أي تقرير
-- محادثة مباشرة مع الـ AI
+### 3. الصلاحيات (Authorization)
+
+| الدور | الصلاحيات |
+|------|-----------|
+| **Guest** | - عرض التقارير العامة |
+| **User** | - كل صلاحيات Guest<br>- رفع ملفات<br>- توليد تقارير<br>- حذف تقاريره |
+| **Admin** | - كل صلاحيات User<br>- إدارة المستخدمين (CRUD)<br>- عرض كل التقارير<br>- حذف أي تقرير<br>- محادثة AI مباشرة |
+
+---
+
+### 4. التحقق من الملفات
+
+```javascript
+// في Multer config
+const fileFilter = (req, file, cb) => {
+  // أنواع مسموحة فقط
+  const allowedTypes = [
+    'text/csv',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  ];
+  
+  if (allowedTypes.includes(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only CSV and Excel files are allowed'));
+  }
+};
+
+// حدود الحجم
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 10 * 1024 * 1024  // 10MB
+  },
+  fileFilter: fileFilter
+});
+```
 
 ---
 
 ## 🛠️ التقنيات المستخدمة
 
-### Backend Framework
-- **Express.js** - إطار عمل الويب
-- **Node.js** - بيئة التشغيل
+### Backend Stack
 
-### قاعدة البيانات
-- **MongoDB** - قاعدة بيانات NoSQL
-- **Mongoose** - ODM للتعامل مع MongoDB
+```
+┌─────────────────────────────────────────┐
+│         Node.js (v18+)                  │
+│         Runtime Environment              │
+└────────────────┬────────────────────────┘
+                 ↓
+┌─────────────────────────────────────────┐
+│         Express.js (v4)                 │
+│         Web Framework                    │
+└────────────────┬────────────────────────┘
+                 ↓
+        ┌────────┴────────┐
+        ↓                 ↓
+┌──────────────┐  ┌──────────────┐
+│   MongoDB    │  │  Mongoose    │
+│   Database   │  │     ODM      │
+└──────────────┘  └──────────────┘
+```
 
-### المصادقة والأمان
-- **JWT** - JSON Web Tokens
-- **bcryptjs** - تشفير كلمات المرور
-- **CORS** - حماية الطلبات
+### المكتبات الأساسية
 
-### معالجة الملفات
-- **Multer** - رفع الملفات
-- **XLSX** - قراءة Excel
-- **fs-extra** - عمليات الملفات
-
-### الذكاء الاصطناعي
-- **Groq API** - Llama 3.3 70B
-- **Hugging Face** - Mistral 7B (احتياطي)
-- **Axios** - طلبات HTTP
-
-### توليد PDF
-- **html-pdf-node** - تحويل HTML إلى PDF
-- دعم كامل للعربية والإنجليزية
+| المكتبة | الإصدار | الاستخدام |
+|---------|---------|-----------|
+| `express` | ^4.18.0 | إطار عمل الويب |
+| `mongoose` | ^7.5.0 | التعامل مع MongoDB |
+| `jsonwebtoken` | ^9.0.0 | JWT Authentication |
+| `bcryptjs` | ^2.4.3 | تشفير كلمات المرور |
+| `multer` | ^1.4.5 | رفع الملفات |
+| `xlsx` | ^0.18.0 | قراءة Excel |
+| `axios` | ^1.5.0 | HTTP Requests |
+| `html-pdf-node` | ^1.0.8 | توليد PDF |
+| `marked` | ^9.0.0 | Markdown → HTML |
+| `cors` | ^2.8.5 | CORS Protection |
+| `dotenv` | ^16.3.0 | متغيرات البيئة |
 
 ---
 
-## 📝 متغيرات البيئة (`config.env`)
+## ⚙️ الإعداد والتشغيل
+
+### 1. المتطلبات
+
+- **Node.js** >= 18.0.0
+- **MongoDB** >= 5.0
+- **npm** or **yarn**
+
+### 2. التثبيت
+
+```bash
+# استنساخ المشروع
+git clone <repository-url>
+
+# الانتقال لمجلد السيرفر
+cd server
+
+# تثبيت المكتبات
+npm install
+```
+
+### 3. إعداد قاعدة البيانات
+
+```bash
+# تشغيل MongoDB (Windows)
+mongod
+
+# أو (Linux/Mac)
+sudo systemctl start mongod
+
+# إنشاء قاعدة البيانات (اختياري - تُنشأ تلقائياً)
+mongo
+> use ai-reports
+```
+
+### 4. متغيرات البيئة
+
+إنشاء ملف `config.env`:
 
 ```env
-# MongoDB
+# Database
 MONGODB_URI=mongodb://localhost:27017/ai-reports
 
 # Server
 PORT=5000
+NODE_ENV=development
 
-# JWT
-JWT_SECRET=your_jwt_secret_key_here
+# JWT Secret (غيّره لشيء عشوائي قوي)
+JWT_SECRET=your_super_secret_jwt_key_here_change_in_production
 
 # AI APIs
-GROQ_API_KEY=your_groq_api_key_here
-HF_TOKEN=your_huggingface_token_here
+GROQ_API_KEY=gsk_xxxxxxxxxxxxx
+HF_TOKEN=hf_xxxxxxxxxxxxx
 
-# Upload Directory
+# Upload Settings
 UPLOAD_DIR=uploads
+MAX_FILE_SIZE=10485760
 ```
 
----
+### 5. تشغيل السيرفر
 
-## 🚀 كيفية عمل المشروع
-
-### 1. تثبيت المكتبات
 ```bash
-cd server
-npm install
-```
-
-### 2. إعداد قاعدة البيانات
-```bash
-# تأكد من تشغيل MongoDB
-mongod
-```
-
-### 3. إعداد متغيرات البيئة
-```bash
-# انسخ config.env.example إلى config.env
-# ثم عدل القيم
-```
-
-### 4. تشغيل السيرفر
-```bash
+# Development mode (مع auto-reload)
 npm run dev
+
+# Production mode
+npm start
 ```
 
-السيرفر سيعمل على `http://localhost:5000`
-
----
-
-## 🔍 اختبار الـ API
-
-### مثال: تسجيل مستخدم جديد
-```bash
-POST http://localhost:5000/api/auth/register
-Content-Type: application/json
-
-{
-  "username": "ahmed",
-  "email": "ahmed@example.com",
-  "password": "123456",
-  "firstName": "Ahmed",
-  "lastName": "Ali"
-}
+**الخرج المتوقع:**
+```
+Server started on port 5000
+Connected to MongoDB
+✓ Ready to accept requests
 ```
 
-### مثال: رفع ملف
+### 6. اختبار API
+
 ```bash
-POST http://localhost:5000/api/reports/upload
-Authorization: Bearer <token>
-Content-Type: multipart/form-data
+# اختبار صحة السيرفر
+curl http://localhost:5000/api/auth/test
 
-file: data.csv
-```
-
-### مثال: توليد تقرير
-```bash
-POST http://localhost:5000/api/reports/generate/:reportId
-Authorization: Bearer <token>
-Content-Type: application/json
-
-{
-  "prompt": "ما هو متوسط الدرجات للطلاب؟"
-}
+# تسجيل مستخدم
+curl -X POST http://localhost:5000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{
+    "username": "testuser",
+    "email": "test@example.com",
+    "password": "123456",
+    "firstName": "Test",
+    "lastName": "User"
+  }'
 ```
 
 ---
 
-## 📈 تحسينات مستقبلية محتملة
+## 📊 إحصائيات المشروع
 
-- [ ] WebSocket للتقارير الحية
-- [ ] نظام إشعارات
-- [ ] تصدير لصيغ أخرى (Excel, Word)
-- [ ] رسوم بيانية تفاعلية
-- [ ] API Rate Limiting
-- [ ] Caching مع Redis
-- [ ] Logging مع Winston
-- [ ] Unit Tests مع Jest
-- [ ] Docker containerization
-- [ ] CI/CD Pipeline
+### الأكواد
+
+```
+📁 server/
+├── 12 ملفات رئيسية
+├── ~3,500 سطر من الكود
+├── 8 Models & Controllers
+├── 15+ API Endpoints
+└── 50+ دالة ومكون
+```
+
+### الميزات
+
+- ✅ **نظام مستخدمين كامل** (تسجيل، دخول، ملف شخصي)
+- ✅ **معالجة ملفات ذكية** (CSV, Excel)
+- ✅ **تكامل AI** (Groq, Hugging Face)
+- ✅ **توليد PDF** (دعم عربي كامل)
+- ✅ **لوحة تحكم إدمن**
+- ✅ **API موثق ومنظم**
+
+---
+
+## 🚀 تحسينات مستقبلية
+
+### في الخطة
+
+- [ ] **WebSocket** للتقارير الحية
+- [ ] **Rate Limiting** لحماية API
+- [ ] **Redis Caching** لتسريع الاستجابة
+- [ ] **Email Service** للإشعارات
+- [ ] **Advanced Analytics** رسوم بيانية تفاعلية
+- [ ] **Export Options** (Excel, Word, JSON)
+- [ ] **Logging System** مع Winston
+- [ ] **Unit Tests** مع Jest
+- [ ] **Docker** containerization
+- [ ] **CI/CD Pipeline** مع GitHub Actions
+
+---
+
+## 📞 الدعم والمساهمة
+
+### الإبلاغ عن مشاكل
+
+إذا واجهت أي مشكلة، يُرجى فتح issue في GitHub مع:
+- وصف المشكلة
+- خطوات إعادة إنتاج المشكلة
+- الأخطاء (logs)
+- نظام التشغيل والإصدارات
+
+### المساهمة
+
+نرحب بأي مساهمات! 
+1. Fork المشروع
+2. إنشاء branch جديد (`git checkout -b feature/AmazingFeature`)
+3. Commit التغييرات (`git commit -m 'Add some AmazingFeature'`)
+4. Push للـ branch (`git push origin feature/AmazingFeature`)
+5. فتح Pull Request
 
 ---
 
 ## 📄 الترخيص
 
-هذا المشروع مفتوح المصدر ومتاح للاستخدام التعليمي والتجاري.
+هذا المشروع مفتوح المصدر ومتاح تحت رخصة MIT.
 
 ---
 
-## 👨‍💻 المطور
+## 👨‍💻 الفريق
 
-تم تطوير هذا المشروع بواسطة فريق العمل مع التركيز على:
-- ✅ كود نظيف وقابل للصيانة
-- ✅ معمارية قابلة للتوسع
-- ✅ أمان عالي
-- ✅ دعم كامل للعربية
+تم تطوير هذا المشروع بواسطة فريق متخصص مع التركيز على:
+
+| المبدأ | التطبيق |
+|--------|---------|
+| 🎯 **Clean Code** | كود نظيف وقابل للصيانة |
+| 🏗️ **Scalable Architecture** | معمارية قابلة للتوسع |
+| 🔐 **Security First** | أمان عالي في كل طبقة |
+| 🌍 **i18n Support** | دعم كامل للعربية والإنجليزية |
+| 📚 **Well Documented** | توثيق شامل ومفصل |
 
 ---
 
-**آخر تحديث:** أكتوبر 2025
+**آخر تحديث:** 8 أكتوبر 2025
 
+**الإصدار:** 2.0
+
+**الحالة:** ✅ قيد الإنتاج والتشغيل
+
+---
+
+<div align="center">
+
+### 🌟 صُنع بـ ❤️ من أجل مجتمع المطورين العرب
+
+**#AI #DataAnalysis #NodeJS #MongoDB #Express**
+
+</div>
