@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useLocale } from '../contexts/LocaleContext';
+import Header from '../components/Header';
 import { FileText, Calendar, User, Eye, Download, Search, Filter, Globe } from 'lucide-react';
 
 interface Report {
@@ -19,6 +20,16 @@ interface Report {
   prompt: string;
 }
 
+interface User {
+  _id: string;
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  avatarUrl?: string;
+}
+
 const BlogPage: React.FC = () => {
   const [reports, setReports] = useState<Report[]>([]);
   const [filteredReports, setFilteredReports] = useState<Report[]>([]);
@@ -26,8 +37,16 @@ const BlogPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState<'all' | 'ar' | 'en'>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
+  const [user, setUser] = useState<User | null>(null);
   const { locale, t } = useLocale();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+  }, []);
 
   useEffect(() => {
     fetchPublicReports();
@@ -90,6 +109,13 @@ const BlogPage: React.FC = () => {
     navigate(`/blog/${reportId}`);
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    navigate('/');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
@@ -103,6 +129,9 @@ const BlogPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      {/* Header */}
+      <Header user={user} onLogout={handleLogout} />
+      
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-800 dark:to-indigo-800 text-white py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -287,32 +316,34 @@ const BlogPage: React.FC = () => {
       </div>
 
       {/* CTA Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-800 dark:to-indigo-800 py-16">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
-            {locale === 'ar' ? 'جاهز لإنشاء تقريرك الخاص؟' : 'Ready to Create Your Own Report?'}
-          </h2>
-          <p className="text-xl text-blue-100 mb-8">
-            {locale === 'ar'
-              ? 'انضم إلينا الآن وابدأ في توليد تقارير احترافية بالذكاء الاصطناعي'
-              : 'Join us now and start generating professional AI-powered reports'}
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button
-              onClick={() => navigate('/register')}
-              className="bg-white hover:bg-gray-100 text-blue-600 font-semibold px-8 py-3 rounded-lg transition-colors shadow-lg hover:shadow-xl"
-            >
-              {locale === 'ar' ? '🚀 ابدأ مجاناً' : '🚀 Get Started Free'}
-            </button>
-            <button
-              onClick={() => navigate('/login')}
-              className="bg-blue-500 hover:bg-blue-400 text-white font-semibold px-8 py-3 rounded-lg transition-colors"
-            >
-              {locale === 'ar' ? 'تسجيل الدخول' : 'Login'}
-            </button>
+      {!user && (
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-800 dark:to-indigo-800 py-16">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+              {locale === 'ar' ? 'جاهز لإنشاء تقريرك الخاص؟' : 'Ready to Create Your Own Report?'}
+            </h2>
+            <p className="text-xl text-blue-100 mb-8">
+              {locale === 'ar'
+                ? 'انضم إلينا الآن وابدأ في توليد تقارير احترافية بالذكاء الاصطناعي'
+                : 'Join us now and start generating professional AI-powered reports'}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={() => navigate('/register')}
+                className="bg-white hover:bg-gray-100 text-blue-600 font-semibold px-8 py-3 rounded-lg transition-colors shadow-lg hover:shadow-xl"
+              >
+                {locale === 'ar' ? '🚀 ابدأ مجاناً' : '🚀 Get Started Free'}
+              </button>
+              <button
+                onClick={() => navigate('/login')}
+                className="bg-blue-500 hover:bg-blue-400 text-white font-semibold px-8 py-3 rounded-lg transition-colors"
+              >
+                {locale === 'ar' ? 'تسجيل الدخول' : 'Login'}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };

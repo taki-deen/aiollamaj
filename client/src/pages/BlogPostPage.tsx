@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useLocale } from '../contexts/LocaleContext';
+import Header from '../components/Header';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
@@ -31,13 +32,31 @@ interface Report {
   prompt: string;
 }
 
+interface User {
+  _id: string;
+  username: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+  avatarUrl?: string;
+}
+
 const BlogPostPage: React.FC = () => {
   const [report, setReport] = useState<Report | null>(null);
   const [loading, setLoading] = useState(true);
   const [copying, setCopying] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
   const { reportId } = useParams<{ reportId: string }>();
   const { locale, t } = useLocale();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem('user');
+    if (savedUser) {
+      setUser(JSON.parse(savedUser));
+    }
+  }, []);
 
   useEffect(() => {
     if (reportId) {
@@ -143,6 +162,13 @@ const BlogPostPage: React.FC = () => {
     return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    navigate('/');
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
@@ -160,9 +186,19 @@ const BlogPostPage: React.FC = () => {
     return null;
   }
 
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setUser(null);
+    navigate('/');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       {/* Header */}
+      <Header user={user} onLogout={handleLogout} />
+      
+      {/* Navigation Bar */}
       <div className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
@@ -354,30 +390,49 @@ const BlogPostPage: React.FC = () => {
         </article>
 
         {/* CTA Section */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-800 dark:to-indigo-800 rounded-2xl shadow-xl p-8 text-center text-white">
-          <h2 className="text-2xl sm:text-3xl font-bold mb-4">
-            {locale === 'ar' ? 'أعجبك هذا التقرير؟' : 'Like This Report?'}
-          </h2>
-          <p className="text-blue-100 mb-6 text-lg">
-            {locale === 'ar'
-              ? 'انضم إلينا وابدأ في إنشاء تقاريرك الخاصة بالذكاء الاصطناعي'
-              : 'Join us and start creating your own AI-powered reports'}
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        {!user ? (
+          <div className="bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-800 dark:to-indigo-800 rounded-2xl shadow-xl p-8 text-center text-white">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-4">
+              {locale === 'ar' ? 'أعجبك هذا التقرير؟' : 'Like This Report?'}
+            </h2>
+            <p className="text-blue-100 mb-6 text-lg">
+              {locale === 'ar'
+                ? 'انضم إلينا وابدأ في إنشاء تقاريرك الخاصة بالذكاء الاصطناعي'
+                : 'Join us and start creating your own AI-powered reports'}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={() => navigate('/register')}
+                className="bg-white hover:bg-gray-100 text-blue-600 font-semibold px-8 py-3 rounded-lg transition-colors shadow-lg hover:shadow-xl"
+              >
+                {locale === 'ar' ? '🚀 ابدأ الآن مجاناً' : '🚀 Get Started Free'}
+              </button>
+              <button
+                onClick={() => navigate('/blog')}
+                className="bg-blue-500 hover:bg-blue-400 text-white font-semibold px-8 py-3 rounded-lg transition-colors"
+              >
+                {locale === 'ar' ? 'تصفح المزيد من التقارير' : 'Browse More Reports'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-800 dark:to-teal-800 rounded-2xl shadow-xl p-8 text-center text-white">
+            <h2 className="text-2xl sm:text-3xl font-bold mb-4">
+              {locale === 'ar' ? 'جاهز لإنشاء تقريرك الخاص؟' : 'Ready to Create Your Own Report?'}
+            </h2>
+            <p className="text-emerald-100 mb-6 text-lg">
+              {locale === 'ar'
+                ? 'ابدأ الآن في توليد تقاريرك الاحترافية بالذكاء الاصطناعي'
+                : 'Start now generating your professional AI-powered reports'}
+            </p>
             <button
-              onClick={() => navigate('/register')}
-              className="bg-white hover:bg-gray-100 text-blue-600 font-semibold px-8 py-3 rounded-lg transition-colors shadow-lg hover:shadow-xl"
+              onClick={() => navigate('/create')}
+              className="bg-white hover:bg-gray-100 text-emerald-600 font-semibold px-8 py-3 rounded-lg transition-colors shadow-lg hover:shadow-xl"
             >
-              {locale === 'ar' ? '🚀 ابدأ الآن مجاناً' : '🚀 Get Started Free'}
-            </button>
-            <button
-              onClick={() => navigate('/blog')}
-              className="bg-blue-500 hover:bg-blue-400 text-white font-semibold px-8 py-3 rounded-lg transition-colors"
-            >
-              {locale === 'ar' ? 'تصفح المزيد من التقارير' : 'Browse More Reports'}
+              {locale === 'ar' ? '➕ إنشاء تقرير جديد' : '➕ Create New Report'}
             </button>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
