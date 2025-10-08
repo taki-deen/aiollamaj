@@ -128,6 +128,16 @@ const Login = ({ onLogin, onSwitchToRegister, onBack }) => {
               </div>
             </div>
 
+            {/* Forgot Password Link */}
+            <div className="flex items-center justify-end">
+              <a
+                href="/forgot-password"
+                className="text-sm font-medium text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300 transition-colors"
+              >
+                {locale === 'ar' ? 'نسيت كلمة المرور؟ 🔑' : 'Forgot password? 🔑'}
+              </a>
+            </div>
+
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-xl p-4">
                 <div className="flex">
