@@ -12,6 +12,7 @@ interface ReportGeneratorProps {
 const ReportGenerator: React.FC<ReportGeneratorProps> = ({ reportId, onReportGenerated }) => {
   const { t, locale } = useLocale();
   const [prompt, setPrompt] = useState('');
+  const [isPublic, setIsPublic] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState('');
 
@@ -36,7 +37,8 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ reportId, onReportGen
 
       const response = await axios.post(`${API_BASE}/reports/generate/${reportId}`, {
         prompt: prompt.trim(),
-        language: locale // إرسال اللغة المختارة
+        language: locale, // إرسال اللغة المختارة
+        isPublic: isPublic // إرسال حالة العمومية
       }, { headers });
 
       if (response.data.success) {
@@ -73,6 +75,22 @@ const ReportGenerator: React.FC<ReportGeneratorProps> = ({ reportId, onReportGen
         </div>
       </div>
       
+      {/* Make Public Checkbox */}
+      <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+        <input
+          type="checkbox"
+          id="isPublic"
+          checked={isPublic}
+          onChange={(e) => setIsPublic(e.target.checked)}
+          className="w-5 h-5 text-blue-600 rounded focus:ring-2 focus:ring-blue-500"
+        />
+        <label htmlFor="isPublic" className="flex-1 text-sm font-medium text-gray-700 dark:text-gray-200">
+          {locale === 'ar' 
+            ? '🌍 جعل التقرير عاماً (سيظهر في المدونة للجميع)'
+            : '🌍 Make this report public (will appear in the blog for everyone)'}
+        </label>
+      </div>
+
       {error && (
         <div className="bg-red-50 border border-red-200 rounded-xl p-4">
           <div className="flex">

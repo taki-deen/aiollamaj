@@ -53,7 +53,7 @@ const LandingPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-6 justify-center">
+        <div className="flex flex-col sm:flex-row gap-6 justify-center mb-12">
           <button
             onClick={() => navigate('/login')}
             className="group relative px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-2xl text-lg font-bold shadow-2xl hover:shadow-indigo-500/25 transition-all duration-300 hover:scale-105 hover:-translate-y-1"
@@ -68,6 +68,26 @@ const LandingPage: React.FC = () => {
             <span className="relative z-10">{t('register')}</span>
             <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 to-teal-700 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
           </button>
+        </div>
+
+        {/* Blog CTA */}
+        <div className="mt-16 bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-800 dark:to-indigo-800 rounded-2xl p-8 shadow-2xl">
+          <div className="text-center text-white">
+            <h2 className="text-3xl font-bold mb-4">
+              {locale === 'ar' ? '📚 اكتشف تقارير احترافية' : '📚 Discover Professional Reports'}
+            </h2>
+            <p className="text-xl text-blue-100 mb-6">
+              {locale === 'ar'
+                ? 'تصفح مئات التقارير المولدة بالذكاء الاصطناعي من مستخدمين آخرين'
+                : 'Browse hundreds of AI-generated reports from other users'}
+            </p>
+            <button
+              onClick={() => navigate('/blog')}
+              className="bg-white hover:bg-gray-100 text-blue-600 font-semibold px-8 py-3 rounded-lg transition-colors shadow-lg hover:shadow-xl"
+            >
+              {locale === 'ar' ? '🚀 تصفح المدونة' : '🚀 Browse Blog'}
+            </button>
+          </div>
         </div>
       </div>
     </div>

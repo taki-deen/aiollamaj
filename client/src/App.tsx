@@ -14,6 +14,8 @@ import VerifyEmailPage from './pages/VerifyEmailPage';
 import VerifyOTPPage from './pages/VerifyOTPPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import BlogPage from './pages/BlogPage';
+import BlogPostPage from './pages/BlogPostPage';
 
 interface User {
   _id: string;
@@ -97,6 +99,10 @@ function App() {
           <Route path="/verify-email/:token" element={<VerifyEmailPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+
+          {/* Blog Routes (Public) */}
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/blog/:reportId" element={<BlogPostPage />} />
 
           {/* Protected Routes */}
           <Route path="/create" element={

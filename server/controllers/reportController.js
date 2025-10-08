@@ -38,7 +38,7 @@ const uploadFile = async (req, res) => {
 const generateAReport = async (req, res) => {
   try {
     const { reportId } = req.params;
-    const { prompt, language } = req.body;
+    const { prompt, language, isPublic } = req.body;
 
     const report = await findReportById(reportId);
     checkReportOwnership(report, req.user?._id);
@@ -48,6 +48,7 @@ const generateAReport = async (req, res) => {
     report.generatedReport = aiResponse;
     report.prompt = prompt;
     report.language = language || 'ar';
+    report.isPublic = isPublic || false;
     report.status = 'completed';
     report.generatedAt = new Date();
     
@@ -89,6 +90,26 @@ const getAllReports = async (req, res) => {
   } catch (error) {
     console.error('Get reports error:', error);
     sendError(res, 'Failed to get reports', 500, error);
+  }
+};
+
+// Get all public reports (for blog page)
+const getPublicReports = async (req, res) => {
+  try {
+    const reports = await Report.find({ 
+      isPublic: true,
+      status: 'completed',
+      generatedReport: { $exists: true, $ne: '' }
+    })
+      .select('-data')
+      .populate('userId', 'firstName lastName avatarUrl')
+      .sort({ generatedAt: -1 })
+      .limit(100);
+    
+    sendSuccess(res, reports);
+  } catch (error) {
+    console.error('Get public reports error:', error);
+    sendError(res, 'Failed to get public reports', 500, error);
   }
 };
 
@@ -226,6 +247,7 @@ module.exports = {
   uploadFile,
   generateAReport,
   getAllReports,
+  getPublicReports,
   getReport,
   downloadReport,
   emailReport,

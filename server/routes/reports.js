@@ -5,7 +5,8 @@ const fs = require('fs-extra');
 const { 
   uploadFile, 
   generateAReport, 
-  getAllReports, 
+  getAllReports,
+  getPublicReports, 
   getReport, 
   downloadReport,
   emailReport,
@@ -53,6 +54,9 @@ router.post('/generate/:reportId', aiLimiter, optionalAuth, generateAReport);
 
 // Get all reports (optional authentication - shows user's reports if authenticated)
 router.get('/', optionalAuth, getAllReports);
+
+// Get all public reports (no authentication required)
+router.get('/public', getPublicReports);
 
 // Get single report (optional authentication)
 router.get('/:reportId', optionalAuth, getReport);
