@@ -344,35 +344,6 @@ const BlogPostPage: React.FC = () => {
                 </span>
               </button>
             </div>
-
-            {/* Rating Section */}
-            {showRatings && (
-              <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
-                <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">
-                  {locale === 'ar' ? '⭐ تقييم التقرير' : '⭐ Rate this Report'}
-                </h3>
-                <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6">
-                  <RatingStars
-                    reportId={report._id}
-                    averageRating={report.averageRating || 0}
-                    totalRatings={report.totalRatings || 0}
-                    userRating={report.ratings?.find(r => r.userId === user?._id)?.rating}
-                    onRate={handleRate}
-                    readonly={!user}
-                    showCount={true}
-                    size="lg"
-                  />
-                  {!user && (
-                    <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
-                      {locale === 'ar' 
-                        ? '🔒 يجب تسجيل الدخول للتقييم' 
-                        : '🔒 Please login to rate this report'
-                      }
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
@@ -524,6 +495,53 @@ const BlogPostPage: React.FC = () => {
             </ReactMarkdown>
           </div>
         </article>
+
+        {/* Rating Section - في آخر الصفحة */}
+        {showRatings && (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 sm:p-8 mb-8">
+            <h3 className="text-2xl font-bold mb-6 text-gray-800 dark:text-gray-200 text-center">
+              {locale === 'ar' ? '⭐ قيّم هذا التقرير' : '⭐ Rate This Report'}
+            </h3>
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-800 rounded-xl p-8 text-center">
+              <RatingStars
+                reportId={report._id}
+                averageRating={report.averageRating || 0}
+                totalRatings={report.totalRatings || 0}
+                userRating={report.ratings?.find(r => r.userId === user?._id)?.rating}
+                onRate={handleRate}
+                readonly={!user}
+                showCount={true}
+                size="lg"
+              />
+              {!user ? (
+                <div className="mt-6 p-4 bg-blue-100 dark:bg-blue-900/30 rounded-lg border border-blue-300 dark:border-blue-700">
+                  <p className="text-sm text-blue-800 dark:text-blue-200 flex items-center justify-center gap-2">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    {locale === 'ar' 
+                      ? 'يجب تسجيل الدخول لتقييم التقرير' 
+                      : 'Please login to rate this report'
+                    }
+                  </p>
+                  <button
+                    onClick={() => navigate('/login')}
+                    className="mt-3 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium"
+                  >
+                    {locale === 'ar' ? 'تسجيل الدخول' : 'Login'}
+                  </button>
+                </div>
+              ) : (
+                <p className="mt-4 text-sm text-gray-600 dark:text-gray-400">
+                  {locale === 'ar' 
+                    ? 'شكراً لمساعدتنا في تحسين المحتوى!' 
+                    : 'Thank you for helping us improve our content!'
+                  }
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* CTA Section */}
         {!user ? (
