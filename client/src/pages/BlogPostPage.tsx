@@ -7,6 +7,7 @@ import { generateReportSchema, getExcerpt } from '../utils/seo';
 import Header from '../components/Header';
 import Sidebar from '../components/Sidebar';
 import RatingStars from '../components/RatingStars';
+import Comments from '../components/Comments';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
@@ -542,6 +543,9 @@ const BlogPostPage: React.FC = () => {
             </div>
           </div>
         )}
+
+        {/* Comments Section */}
+        <Comments reportId={report._id} user={user} />
 
         {/* CTA Section */}
         {!user ? (

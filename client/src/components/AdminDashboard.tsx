@@ -66,10 +66,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [showRatings, setShowRatings] = useState(true);
   const [savingSettings, setSavingSettings] = useState(false);
+  const [comments, setComments] = useState<any[]>([]);
+  const [commentsStats, setCommentsStats] = useState({ total: 0, approved: 0, pending: 0 });
   const [filterUser, setFilterUser] = useState<string>('all');
   const [filterPublic, setFilterPublic] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState<'reports' | 'users' | 'ai-chat' | 'settings'>('reports');
+  const [activeTab, setActiveTab] = useState<'reports' | 'users' | 'ai-chat' | 'settings' | 'comments'>('reports');
   const { theme } = useTheme();
   const { locale, t } = useLocale();
   
@@ -78,7 +80,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
   useEffect(() => {
     fetchAllReports();
     fetchRatingsSettings();
-  }, []);
+    if (activeTab === 'comments') {
+      fetchAllComments();
+    }
+  }, [activeTab]);
 
   const fetchAllReports = async () => {
     try {
@@ -176,6 +181,61 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
       alert(error.response?.data?.message || (locale === 'ar' ? 'فشل حفظ الإعدادات' : 'Failed to save settings'));
     } finally {
       setSavingSettings(false);
+    }
+  };
+
+  const fetchAllComments = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API_BASE}/comments/admin/all`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setComments(response.data.data.comments);
+      setCommentsStats(response.data.data.stats);
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+      setError(locale === 'ar' ? 'فشل تحميل التعليقات' : 'Failed to load comments');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleApproveComment = async (commentId: string, isApproved: boolean) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.patch(
+        `${API_BASE}/comments/${commentId}/approve`,
+        { isApproved },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      fetchAllComments();
+      alert(locale === 'ar' 
+        ? `✅ تم ${isApproved ? 'الموافقة على' : 'رفض'} التعليق`
+        : `✅ Comment ${isApproved ? 'approved' : 'rejected'}`
+      );
+    } catch (error: any) {
+      alert(error.response?.data?.message || (locale === 'ar' ? 'فشل تحديث التعليق' : 'Failed to update comment'));
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!window.confirm(locale === 'ar' ? 'هل تريد حذف التعليق؟' : 'Delete this comment?')) {
+      return;
+    }
+
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API_BASE}/comments/${commentId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setComments(comments.filter(c => c._id !== commentId));
+      alert(locale === 'ar' ? '✅ تم حذف التعليق' : '✅ Comment deleted');
+    } catch (error: any) {
+      alert(error.response?.data?.message || (locale === 'ar' ? 'فشل حذف التعليق' : 'Failed to delete comment'));
     }
   };
 
@@ -313,6 +373,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
               </span>
             </button>
             <button
+              onClick={() => setActiveTab('comments')}
+              className={`flex-1 py-2 sm:py-3 px-4 sm:px-6 rounded-lg font-medium transition-all duration-200 text-sm sm:text-base ${
+                activeTab === 'comments'
+                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' 
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              <span className="flex items-center justify-center">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                </svg>
+                <span className="hidden sm:inline">{locale === 'ar' ? 'التعليقات' : 'Comments'}</span>
+                <span className="sm:hidden">{locale === 'ar' ? 'تعليقات' : 'Comments'}</span>
+              </span>
+            </button>
+            <button
               onClick={() => setActiveTab('settings')}
               className={`flex-1 py-2 sm:py-3 px-4 sm:px-6 rounded-lg font-medium transition-all duration-200 text-sm sm:text-base ${
                 activeTab === 'settings'
@@ -335,6 +411,132 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
           <UserManagement user={user} onBack={onBack} />
         ) : activeTab === 'ai-chat' ? (
           <AIChatAdmin user={user} />
+        ) : activeTab === 'comments' ? (
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+            <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white flex items-center gap-2">
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+              </svg>
+              {locale === 'ar' ? 'إدارة التعليقات' : 'Comments Management'}
+            </h2>
+
+            {/* Stats */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+              <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                  {locale === 'ar' ? 'إجمالي التعليقات' : 'Total Comments'}
+                </div>
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                  {commentsStats.total}
+                </div>
+              </div>
+              <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                  {locale === 'ar' ? 'موافق عليها' : 'Approved'}
+                </div>
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                  {commentsStats.approved}
+                </div>
+              </div>
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-4">
+                <div className="text-sm text-gray-600 dark:text-gray-400 mb-1">
+                  {locale === 'ar' ? 'في الانتظار' : 'Pending'}
+                </div>
+                <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                  {commentsStats.pending}
+                </div>
+              </div>
+            </div>
+
+            {/* Comments List */}
+            {loading ? (
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+              </div>
+            ) : comments.length === 0 ? (
+              <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                <svg className="w-16 h-16 mx-auto mb-4 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
+                </svg>
+                <p>{locale === 'ar' ? 'لا توجد تعليقات' : 'No comments'}</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {comments.map((comment) => (
+                  <div
+                    key={comment._id}
+                    className={`p-4 rounded-lg border-2 ${
+                      comment.isApproved
+                        ? 'bg-white dark:bg-gray-700 border-green-200 dark:border-green-800'
+                        : 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-300 dark:border-yellow-700'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="flex items-center gap-3">
+                        {comment.userId?.avatarUrl ? (
+                          <img
+                            src={`${API_ROOT}${comment.userId.avatarUrl}`}
+                            alt={comment.userId.firstName}
+                            className="w-10 h-10 rounded-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
+                            {comment.userId?.firstName?.charAt(0)}{comment.userId?.lastName?.charAt(0)}
+                          </div>
+                        )}
+                        <div>
+                          <div className="font-semibold text-gray-900 dark:text-white">
+                            {comment.userId?.firstName} {comment.userId?.lastName}
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-gray-400">
+                            {new Date(comment.createdAt).toLocaleDateString(locale === 'ar' ? 'ar-EG' : 'en-US')}
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        {comment.isApproved ? (
+                          <span className="text-xs px-3 py-1 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-full flex items-center gap-1">
+                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            </svg>
+                            {locale === 'ar' ? 'موافق' : 'Approved'}
+                          </span>
+                        ) : (
+                          <button
+                            onClick={() => handleApproveComment(comment._id, true)}
+                            className="px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-medium transition-colors"
+                          >
+                            {locale === 'ar' ? '✓ موافقة' : '✓ Approve'}
+                          </button>
+                        )}
+                        <button
+                          onClick={() => handleDeleteComment(comment._id)}
+                          className="p-1.5 text-red-600 hover:bg-red-100 dark:hover:bg-red-900 rounded-lg transition-colors"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+
+                    <p className={`text-gray-700 dark:text-gray-300 ${locale === 'ar' ? 'text-right' : 'text-left'} whitespace-pre-wrap`}>
+                      {comment.content}
+                    </p>
+
+                    {comment.reportId && (
+                      <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
+                          {locale === 'ar' ? 'على التقرير:' : 'On report:'} <span className="font-semibold">{comment.reportId.filename}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         ) : activeTab === 'settings' ? (
           <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
             <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white">

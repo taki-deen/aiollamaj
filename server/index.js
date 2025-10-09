@@ -32,8 +32,10 @@ app.use('/api/', generalLimiter);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Routes
+const commentRoutes = require('./routes/comments');
 app.use('/api/auth', authRoutes);
 app.use('/api/reports', reportRoutes);
+app.use('/api/comments', commentRoutes);
 app.use('/api/ai', aiRoutes);
 
 // Health check endpoint
