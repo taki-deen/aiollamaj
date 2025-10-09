@@ -97,6 +97,8 @@ const getAllReports = async (req, res) => {
 // Get all public reports (for blog page)
 const getPublicReports = async (req, res) => {
   try {
+    const Comment = require('../models/Comment');
+    
     const reports = await Report.find({ 
       isPublic: true,
       status: 'completed',
@@ -105,9 +107,20 @@ const getPublicReports = async (req, res) => {
       .select('-data')
       .populate('userId', 'firstName lastName avatarUrl')
       .sort({ generatedAt: -1 })
-      .limit(100);
+      .limit(100)
+      .lean();
     
-    sendSuccess(res, reports);
+    const reportsWithCounts = await Promise.all(
+      reports.map(async (report) => {
+        const commentsCount = await Comment.countDocuments({ 
+          reportId: report._id,
+          isApproved: true 
+        });
+        return { ...report, commentsCount };
+      })
+    );
+    
+    sendSuccess(res, reportsWithCounts);
   } catch (error) {
     console.error('Get public reports error:', error);
     sendError(res, 'Failed to get public reports', 500, error);

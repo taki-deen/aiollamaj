@@ -7,7 +7,7 @@ import { generateBlogSchema } from '../utils/seo';
 import Header from '../components/Header';
 import Sidebar from '../components/Sidebar';
 import RatingStars from '../components/RatingStars';
-import { FileText, Calendar, User, Eye, Download, Search, Filter, Globe } from 'lucide-react';
+import { FileText, Calendar, User, Eye, Download, Search, Filter, Globe, MessageCircle } from 'lucide-react';
 
 interface Report {
   _id: string;
@@ -28,6 +28,7 @@ interface Report {
     userId: string;
     rating: number;
   }>;
+  commentsCount: number;
 }
 
 interface User {
@@ -571,9 +572,9 @@ const BlogPage: React.FC = () => {
                   <meta itemProp="url" content={`${window.location.origin}/blog/${report._id}`} />
                   <meta itemProp="image" content={report.userId?.avatarUrl ? `${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5000'}${report.userId.avatarUrl}` : `${window.location.origin}/logo512.png`} />
 
-                  {/* Rating - عرض فقط */}
-                  {showRatings && (
-                    <div className="mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+                  {/* Rating & Comments Count */}
+                  <div className="mb-4 pb-4 border-b border-gray-200 dark:border-gray-700 space-y-3">
+                    {showRatings && (
                       <RatingStars
                         reportId={report._id}
                         averageRating={report.averageRating || 0}
@@ -582,8 +583,16 @@ const BlogPage: React.FC = () => {
                         showCount={true}
                         size="md"
                       />
+                    )}
+                    
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                      <MessageCircle className="w-4 h-4" />
+                      <span>
+                        {report.commentsCount || 0} {locale === 'ar' ? 'تعليق' : 'comment'}
+                        {(report.commentsCount || 0) !== 1 && locale !== 'ar' && 's'}
+                      </span>
                     </div>
-                  )}
+                  </div>
 
                   {/* تم إزالة قسم Prompt لأنه أصبح العنوان */}
 
