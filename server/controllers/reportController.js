@@ -374,7 +374,7 @@ const updateRatingsSettings = async (req, res) => {
 const updateReport = async (req, res) => {
   try {
     const { reportId } = req.params;
-    const { prompt, language, isPublic } = req.body;
+    const { prompt, language, isPublic, generatedReport } = req.body;
     
     if (!req.user) {
       return sendError(res, 'Authentication required', 401);
@@ -386,6 +386,10 @@ const updateReport = async (req, res) => {
     if (prompt !== undefined) report.prompt = prompt;
     if (language !== undefined) report.language = language;
     if (isPublic !== undefined) report.isPublic = isPublic;
+    if (generatedReport !== undefined) {
+      report.generatedReport = generatedReport;
+      report.generatedAt = new Date();
+    }
     
     await report.save();
     

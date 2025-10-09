@@ -28,12 +28,10 @@ interface User {
 
 const EditReportPage: React.FC = () => {
   const [report, setReport] = useState<Report | null>(null);
-  const [prompt, setPrompt] = useState('');
-  const [language, setLanguage] = useState<'ar' | 'en'>('ar');
+  const [editedContent, setEditedContent] = useState('');
   const [isPublic, setIsPublic] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [regenerating, setRegenerating] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { reportId } = useParams<{ reportId: string }>();
@@ -67,8 +65,7 @@ const EditReportPage: React.FC = () => {
 
       const reportData = response.data.success ? response.data.data : response.data;
       setReport(reportData);
-      setPrompt(reportData.prompt || '');
-      setLanguage(reportData.language || 'ar');
+      setEditedContent(reportData.generatedReport || '');
       setIsPublic(reportData.isPublic ?? true);
     } catch (error: any) {
       alert(error.response?.data?.message || (locale === 'ar' ? 'فشل تحميل التقرير' : 'Failed to load report'));
@@ -81,6 +78,11 @@ const EditReportPage: React.FC = () => {
   const handleSave = async () => {
     if (!report) return;
 
+    if (!editedContent.trim()) {
+      alert(locale === 'ar' ? 'لا يمكن حفظ تقرير فارغ' : 'Cannot save empty report');
+      return;
+    }
+
     try {
       setSaving(true);
       const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
@@ -88,7 +90,10 @@ const EditReportPage: React.FC = () => {
 
       await axios.put(
         `${API_BASE}/reports/${reportId}`,
-        { prompt, language, isPublic },
+        { 
+          generatedReport: editedContent,
+          isPublic 
+        },
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -98,35 +103,6 @@ const EditReportPage: React.FC = () => {
       alert(error.response?.data?.message || (locale === 'ar' ? 'فشل حفظ التعديلات' : 'Failed to save changes'));
     } finally {
       setSaving(false);
-    }
-  };
-
-  const handleRegenerate = async () => {
-    if (!report) return;
-
-    const confirmMessage = locale === 'ar'
-      ? 'هل تريد إعادة توليد التقرير؟ سيتم استبدال المحتوى الحالي.'
-      : 'Do you want to regenerate the report? Current content will be replaced.';
-
-    if (!window.confirm(confirmMessage)) return;
-
-    try {
-      setRegenerating(true);
-      const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
-      const token = localStorage.getItem('token');
-
-      const response = await axios.post(
-        `${API_BASE}/reports/${reportId}/regenerate`,
-        { prompt, language },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-
-      setReport(response.data.data.report);
-      alert(locale === 'ar' ? '✅ تم إعادة توليد التقرير بنجاح' : '✅ Report regenerated successfully');
-    } catch (error: any) {
-      alert(error.response?.data?.message || (locale === 'ar' ? 'فشل إعادة التوليد' : 'Failed to regenerate'));
-    } finally {
-      setRegenerating(false);
     }
   };
 
@@ -209,37 +185,28 @@ const EditReportPage: React.FC = () => {
           <div className="space-y-6">
             <div>
               <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                {locale === 'ar' ? '📝 الطلب (Prompt)' : '📝 Prompt'}
+                {locale === 'ar' ? '📝 محتوى التقرير' : '📝 Report Content'}
               </label>
               <textarea
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                rows={4}
-                className={`w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white resize-none ${
+                value={editedContent}
+                onChange={(e) => setEditedContent(e.target.value)}
+                rows={20}
+                className={`w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white font-mono text-sm ${
                   locale === 'ar' ? 'text-right' : 'text-left'
                 }`}
-                placeholder={locale === 'ar' ? 'مثال: حلل البيانات واعطني أهم الإحصائيات' : 'Example: Analyze the data and give me key statistics'}
+                placeholder={locale === 'ar' ? 'عدّل محتوى التقرير هنا...' : 'Edit report content here...'}
               />
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                {locale === 'ar' 
-                  ? 'وصف ما تريده من التقرير - سيظهر كعنوان في المدونة'
-                  : 'Describe what you want from the report - will appear as title in blog'
-                }
-              </p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                {locale === 'ar' ? '🌐 اللغة' : '🌐 Language'}
-              </label>
-              <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value as 'ar' | 'en')}
-                className="w-full px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white cursor-pointer"
-              >
-                <option value="ar">{locale === 'ar' ? '🇸🇦 العربية' : '🇸🇦 Arabic'}</option>
-                <option value="en">{locale === 'ar' ? '🇺🇸 الإنجليزية' : '🇺🇸 English'}</option>
-              </select>
+              <div className="flex items-center justify-between mt-2">
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  {locale === 'ar' 
+                    ? 'يمكنك تعديل النص بحرية - يدعم Markdown'
+                    : 'You can freely edit the text - Markdown supported'
+                  }
+                </p>
+                <span className="text-xs text-gray-500 dark:text-gray-400">
+                  {editedContent.length} {locale === 'ar' ? 'حرف' : 'characters'}
+                </span>
+              </div>
             </div>
 
             <div>
@@ -267,8 +234,8 @@ const EditReportPage: React.FC = () => {
             <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200 dark:border-gray-700">
               <button
                 onClick={handleSave}
-                disabled={saving || regenerating}
-                className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={saving}
+                className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-3 rounded-xl transition-all font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
               >
                 {saving ? (
                   <>
@@ -284,51 +251,14 @@ const EditReportPage: React.FC = () => {
               </button>
 
               <button
-                onClick={handleRegenerate}
-                disabled={saving || regenerating}
-                className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-6 py-3 rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                onClick={() => navigate('/reports')}
+                disabled={saving}
+                className="px-6 py-3 bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-xl transition-colors font-medium disabled:opacity-50"
               >
-                {regenerating ? (
-                  <>
-                    <Loader className="w-5 h-5 animate-spin" />
-                    {locale === 'ar' ? 'جاري التوليد...' : 'Regenerating...'}
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="w-5 h-5" />
-                    {locale === 'ar' ? 'إعادة توليد التقرير' : 'Regenerate Report'}
-                  </>
-                )}
+                {locale === 'ar' ? 'إلغاء' : 'Cancel'}
               </button>
             </div>
-
-            {regenerating && (
-              <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-                <p className="text-sm text-purple-800 dark:text-purple-200 text-center">
-                  {locale === 'ar' 
-                    ? '⚡ جاري إعادة توليد التقرير بالذكاء الاصطناعي... قد يستغرق دقيقة'
-                    : '⚡ Regenerating report with AI... this may take a minute'
-                  }
-                </p>
-              </div>
-            )}
           </div>
-
-          {report.generatedReport && (
-            <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-bold mb-4 text-gray-800 dark:text-white">
-                {locale === 'ar' ? '📄 معاينة التقرير' : '📄 Report Preview'}
-              </h2>
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-6 max-h-96 overflow-y-auto">
-                <div className={`prose dark:prose-invert max-w-none ${locale === 'ar' ? 'text-right' : 'text-left'}`}>
-                  {report.generatedReport.substring(0, 500)}...
-                </div>
-                <p className="text-xs text-gray-500 dark:text-gray-400 mt-4 italic">
-                  {locale === 'ar' ? 'معاينة فقط - التقرير الكامل متاح بعد الحفظ' : 'Preview only - full report available after saving'}
-                </p>
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
