@@ -1,4 +1,5 @@
 const Report = require('../models/Report');
+const Settings = require('../models/Settings');
 const { processFile, generateReport, generatePDF } = require('../services/reportService');
 const { sendReportByEmail } = require('../services/emailService');
 const { sendSuccess, sendError } = require('../utils/responseHelper');
@@ -278,6 +279,98 @@ const togglePublicStatus = async (req, res) => {
   }
 };
 
+const addRating = async (req, res) => {
+  try {
+    const { reportId } = req.params;
+    const { rating } = req.body;
+    const userId = req.user._id;
+
+    if (!rating || rating < 1 || rating > 5) {
+      return sendError(res, 'Rating must be between 1 and 5', 400);
+    }
+
+    const report = await Report.findById(reportId);
+    if (!report) {
+      return sendError(res, 'Report not found', 404);
+    }
+
+    if (!report.isPublic) {
+      return sendError(res, 'Cannot rate private reports', 403);
+    }
+
+    const existingRatingIndex = report.ratings.findIndex(
+      r => r.userId.toString() === userId.toString()
+    );
+
+    if (existingRatingIndex > -1) {
+      report.ratings[existingRatingIndex].rating = rating;
+      report.ratings[existingRatingIndex].createdAt = new Date();
+    } else {
+      report.ratings.push({ userId, rating });
+    }
+
+    report.calculateAverageRating();
+    await report.save();
+
+    sendSuccess(res, {
+      averageRating: report.averageRating,
+      totalRatings: report.totalRatings,
+      userRating: rating
+    }, 'Rating added successfully');
+  } catch (error) {
+    sendError(res, 'Failed to add rating', 500, error);
+  }
+};
+
+const deleteRating = async (req, res) => {
+  try {
+    const { reportId } = req.params;
+    const userId = req.user._id;
+
+    const report = await Report.findById(reportId);
+    if (!report) {
+      return sendError(res, 'Report not found', 404);
+    }
+
+    report.ratings = report.ratings.filter(
+      r => r.userId.toString() !== userId.toString()
+    );
+
+    report.calculateAverageRating();
+    await report.save();
+
+    sendSuccess(res, {
+      averageRating: report.averageRating,
+      totalRatings: report.totalRatings
+    }, 'Rating removed successfully');
+  } catch (error) {
+    sendError(res, 'Failed to delete rating', 500, error);
+  }
+};
+
+const getRatingsSettings = async (req, res) => {
+  try {
+    const showRatings = await Settings.get('showRatings', true);
+    sendSuccess(res, { showRatings });
+  } catch (error) {
+    sendError(res, 'Failed to get settings', 500, error);
+  }
+};
+
+const updateRatingsSettings = async (req, res) => {
+  try {
+    checkAdminAccess(req.user);
+    
+    const { showRatings } = req.body;
+    
+    await Settings.set('showRatings', showRatings, req.user._id, 'Control visibility of ratings on public reports');
+
+    sendSuccess(res, { showRatings }, 'Settings updated successfully');
+  } catch (error) {
+    sendError(res, error.message || 'Failed to update settings', error.message ? 403 : 500, error);
+  }
+};
+
 module.exports = {
   uploadFile,
   generateAReport,
@@ -289,5 +382,9 @@ module.exports = {
   togglePublicStatus,
   deleteReport,
   getAllReportsForAdmin,
-  deleteReportByAdmin
+  deleteReportByAdmin,
+  addRating,
+  deleteRating,
+  getRatingsSettings,
+  updateRatingsSettings
 };

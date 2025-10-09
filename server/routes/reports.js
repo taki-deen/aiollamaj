@@ -13,7 +13,11 @@ const {
   togglePublicStatus,
   deleteReport,
   getAllReportsForAdmin,
-  deleteReportByAdmin
+  deleteReportByAdmin,
+  addRating,
+  deleteRating,
+  getRatingsSettings,
+  updateRatingsSettings
 } = require('../controllers/reportController');
 const { authenticate, optionalAuth } = require('../middleware/auth');
 const { uploadLimiter, aiLimiter, downloadLimiter, adminLimiter } = require('../middleware/rateLimiter');
@@ -73,6 +77,14 @@ router.patch('/:reportId/toggle-public', authenticate, togglePublicStatus);
 
 // Delete report (optional authentication)
 router.delete('/:reportId', optionalAuth, deleteReport);
+
+// Rating routes
+router.post('/:reportId/rating', authenticate, addRating);
+router.delete('/:reportId/rating', authenticate, deleteRating);
+
+// Settings routes
+router.get('/settings/ratings', getRatingsSettings);
+router.put('/settings/ratings', authenticate, updateRatingsSettings);
 
 // Admin routes - مع Rate Limiting
 router.get('/admin/all', authenticate, adminLimiter, getAllReportsForAdmin);

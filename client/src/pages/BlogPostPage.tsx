@@ -6,6 +6,7 @@ import { useLocale } from '../contexts/LocaleContext';
 import { generateReportSchema, getExcerpt } from '../utils/seo';
 import Header from '../components/Header';
 import Sidebar from '../components/Sidebar';
+import RatingStars from '../components/RatingStars';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
@@ -33,6 +34,12 @@ interface Report {
     avatarUrl?: string;
   };
   prompt: string;
+  averageRating: number;
+  totalRatings: number;
+  ratings: Array<{
+    userId: string;
+    rating: number;
+  }>;
 }
 
 interface User {
@@ -51,6 +58,7 @@ const BlogPostPage: React.FC = () => {
   const [copying, setCopying] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showRatings, setShowRatings] = useState(true);
   const { reportId } = useParams<{ reportId: string }>();
   const { locale, t } = useLocale();
   const navigate = useNavigate();
@@ -65,6 +73,7 @@ const BlogPostPage: React.FC = () => {
   useEffect(() => {
     if (reportId) {
       fetchReport(reportId);
+      fetchRatingsSettings();
     }
   }, [reportId]);
 
@@ -142,6 +151,49 @@ const BlogPostPage: React.FC = () => {
       }
     } catch (error) {
       console.error('Share failed:', error);
+    }
+  };
+
+  const fetchRatingsSettings = async () => {
+    try {
+      const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await axios.get(`${API_BASE}/reports/settings/ratings`);
+      setShowRatings(response.data.data.showRatings);
+    } catch (error) {
+      console.error('Error fetching ratings settings:', error);
+    }
+  };
+
+  const handleRate = async (rating: number) => {
+    if (!user || !report) {
+      alert(locale === 'ar' ? 'يجب تسجيل الدخول للتقييم' : 'Please login to rate');
+      navigate('/login');
+      return;
+    }
+
+    try {
+      const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const token = localStorage.getItem('token');
+      
+      const response = await axios.post(
+        `${API_BASE}/reports/${report._id}/rating`,
+        { rating },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        setReport({
+          ...report,
+          averageRating: response.data.data.averageRating,
+          totalRatings: response.data.data.totalRatings,
+          ratings: [...(report.ratings || []), { userId: user._id, rating }]
+        });
+        
+        const message = locale === 'ar' ? '✅ تم التقييم بنجاح' : '✅ Rating added successfully';
+        alert(message);
+      }
+    } catch (error: any) {
+      alert(error.response?.data?.message || (locale === 'ar' ? 'فشل التقييم' : 'Rating failed'));
     }
   };
 
@@ -292,6 +344,35 @@ const BlogPostPage: React.FC = () => {
                 </span>
               </button>
             </div>
+
+            {/* Rating Section */}
+            {showRatings && (
+              <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <h3 className="text-lg font-semibold mb-4 text-gray-800 dark:text-gray-200">
+                  {locale === 'ar' ? '⭐ تقييم التقرير' : '⭐ Rate this Report'}
+                </h3>
+                <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-6">
+                  <RatingStars
+                    reportId={report._id}
+                    averageRating={report.averageRating || 0}
+                    totalRatings={report.totalRatings || 0}
+                    userRating={report.ratings?.find(r => r.userId === user?._id)?.rating}
+                    onRate={handleRate}
+                    readonly={!user}
+                    showCount={true}
+                    size="lg"
+                  />
+                  {!user && (
+                    <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">
+                      {locale === 'ar' 
+                        ? '🔒 يجب تسجيل الدخول للتقييم' 
+                        : '🔒 Please login to rate this report'
+                      }
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

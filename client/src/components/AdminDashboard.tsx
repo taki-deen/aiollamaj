@@ -64,10 +64,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
   const [error, setError] = useState('');
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [showRatings, setShowRatings] = useState(true);
+  const [savingSettings, setSavingSettings] = useState(false);
   const [filterUser, setFilterUser] = useState<string>('all');
   const [filterPublic, setFilterPublic] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState<'reports' | 'users' | 'ai-chat'>('reports');
+  const [activeTab, setActiveTab] = useState<'reports' | 'users' | 'ai-chat' | 'settings'>('reports');
   const { theme } = useTheme();
   const { locale, t } = useLocale();
   
@@ -75,6 +77,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
 
   useEffect(() => {
     fetchAllReports();
+    fetchRatingsSettings();
   }, []);
 
   const fetchAllReports = async () => {
@@ -140,6 +143,39 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
     } catch (err: any) {
       setError(err.response?.data?.message || (locale === 'ar' ? 'فشل حذف التقرير' : 'Failed to delete report'));
       console.error('Delete error:', err);
+    }
+  };
+
+  const fetchRatingsSettings = async () => {
+    try {
+      const response = await axios.get(`${API_BASE}/reports/settings/ratings`);
+      setShowRatings(response.data.data.showRatings);
+    } catch (error) {
+      console.error('Error fetching ratings settings:', error);
+    }
+  };
+
+  const handleToggleRatings = async () => {
+    try {
+      setSavingSettings(true);
+      const token = localStorage.getItem('token');
+      const newValue = !showRatings;
+      
+      await axios.put(
+        `${API_BASE}/reports/settings/ratings`,
+        { showRatings: newValue },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      setShowRatings(newValue);
+      alert(locale === 'ar' 
+        ? `✅ تم ${newValue ? 'إظهار' : 'إخفاء'} التقييمات بنجاح`
+        : `✅ Ratings ${newValue ? 'enabled' : 'disabled'} successfully`
+      );
+    } catch (error: any) {
+      alert(error.response?.data?.message || (locale === 'ar' ? 'فشل حفظ الإعدادات' : 'Failed to save settings'));
+    } finally {
+      setSavingSettings(false);
     }
   };
 
@@ -276,6 +312,22 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
                 <span className="sm:hidden">{locale === 'ar' ? 'AI' : 'AI'}</span>
               </span>
             </button>
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`flex-1 py-2 sm:py-3 px-4 sm:px-6 rounded-lg font-medium transition-all duration-200 text-sm sm:text-base ${
+                activeTab === 'settings'
+                  ? 'bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm' 
+                  : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
+              }`}
+            >
+              <span className="flex items-center justify-center">
+                <svg className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span className="hidden sm:inline">{locale === 'ar' ? 'الإعدادات' : 'Settings'}</span>
+                <span className="sm:hidden">{locale === 'ar' ? 'إعدادات' : 'Settings'}</span>
+              </span>
+            </button>
           </div>
         </div>
 
@@ -283,6 +335,86 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
           <UserManagement user={user} onBack={onBack} />
         ) : activeTab === 'ai-chat' ? (
           <AIChatAdmin user={user} />
+        ) : activeTab === 'settings' ? (
+          <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg p-6">
+            <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white">
+              {locale === 'ar' ? '⚙️ إعدادات النظام' : '⚙️ System Settings'}
+            </h2>
+
+            {/* Ratings Settings */}
+            <div className="space-y-6">
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-700 dark:to-gray-800 rounded-xl p-6">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-800 dark:text-white mb-2 flex items-center gap-2">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                      </svg>
+                      {locale === 'ar' ? 'إظهار/إخفاء التقييمات' : 'Show/Hide Ratings'}
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      {locale === 'ar' 
+                        ? 'تحكم في إظهار أو إخفاء نظام التقييمات في المدونة والتقارير العامة'
+                        : 'Control the visibility of the rating system on blog and public reports'
+                      }
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleToggleRatings}
+                    disabled={savingSettings}
+                    className={`relative inline-flex h-8 w-14 items-center rounded-full transition-colors ${
+                      showRatings 
+                        ? 'bg-green-600' 
+                        : 'bg-gray-300 dark:bg-gray-600'
+                    } ${savingSettings ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                  >
+                    <span
+                      className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
+                        showRatings ? 'translate-x-7' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className={`px-4 py-2 rounded-lg font-medium ${
+                    showRatings 
+                      ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
+                      : 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
+                  }`}>
+                    {showRatings 
+                      ? (locale === 'ar' ? '✅ التقييمات مفعّلة' : '✅ Ratings Enabled')
+                      : (locale === 'ar' ? '❌ التقييمات معطّلة' : '❌ Ratings Disabled')
+                    }
+                  </div>
+                  {savingSettings && (
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {locale === 'ar' ? 'جاري الحفظ...' : 'Saving...'}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Info Card */}
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <div className="flex-1 text-sm text-blue-700 dark:text-blue-300">
+                    <p className="font-semibold mb-1">
+                      {locale === 'ar' ? 'ملاحظة:' : 'Note:'}
+                    </p>
+                    <p>
+                      {locale === 'ar' 
+                        ? 'عند إخفاء التقييمات، لن يتمكن المستخدمون من رؤية أو إضافة تقييمات جديدة. التقييمات الموجودة ستبقى محفوظة.'
+                        : 'When ratings are hidden, users will not be able to see or add new ratings. Existing ratings will remain saved.'
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         ) : (
         <>
         {/* Stats */}

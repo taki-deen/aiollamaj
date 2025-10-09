@@ -6,6 +6,7 @@ import { useLocale } from '../contexts/LocaleContext';
 import { generateBlogSchema } from '../utils/seo';
 import Header from '../components/Header';
 import Sidebar from '../components/Sidebar';
+import RatingStars from '../components/RatingStars';
 import { FileText, Calendar, User, Eye, Download, Search, Filter, Globe } from 'lucide-react';
 
 interface Report {
@@ -21,6 +22,12 @@ interface Report {
     avatarUrl?: string;
   };
   prompt: string;
+  averageRating: number;
+  totalRatings: number;
+  ratings: Array<{
+    userId: string;
+    rating: number;
+  }>;
 }
 
 interface User {
@@ -40,10 +47,11 @@ const BlogPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchIn, setSearchIn] = useState<'all' | 'title' | 'content' | 'author'>('all');
   const [selectedLanguage, setSelectedLanguage] = useState<'all' | 'ar' | 'en'>('all');
-  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'popular' | 'alphabetical'>('newest');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'popular' | 'alphabetical' | 'rating'>('newest');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [user, setUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showRatings, setShowRatings] = useState(true);
   const { locale, t } = useLocale();
   const navigate = useNavigate();
 
@@ -56,6 +64,7 @@ const BlogPage: React.FC = () => {
 
   useEffect(() => {
     fetchPublicReports();
+    fetchRatingsSettings();
   }, []);
 
   useEffect(() => {
@@ -71,6 +80,53 @@ const BlogPage: React.FC = () => {
       console.error('Error fetching public reports:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRatingsSettings = async () => {
+    try {
+      const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const response = await axios.get(`${API_BASE}/reports/settings/ratings`);
+      setShowRatings(response.data.data.showRatings);
+    } catch (error) {
+      console.error('Error fetching ratings settings:', error);
+    }
+  };
+
+  const handleRate = async (reportId: string, rating: number) => {
+    if (!user) {
+      alert(locale === 'ar' ? 'يجب تسجيل الدخول للتقييم' : 'Please login to rate');
+      navigate('/login');
+      return;
+    }
+
+    try {
+      const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+      const token = localStorage.getItem('token');
+      
+      const response = await axios.post(
+        `${API_BASE}/reports/${reportId}/rating`,
+        { rating },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      if (response.data.success) {
+        setReports(reports.map(r => 
+          r._id === reportId 
+            ? { 
+                ...r, 
+                averageRating: response.data.data.averageRating,
+                totalRatings: response.data.data.totalRatings,
+                ratings: [...(r.ratings || []), { userId: user._id, rating }]
+              }
+            : r
+        ));
+        
+        const message = locale === 'ar' ? '✅ تم التقييم بنجاح' : '✅ Rating added successfully';
+        alert(message);
+      }
+    } catch (error: any) {
+      alert(error.response?.data?.message || (locale === 'ar' ? 'فشل التقييم' : 'Rating failed'));
     }
   };
 
@@ -124,9 +180,13 @@ const BlogPage: React.FC = () => {
           return a.filename.localeCompare(b.filename);
         
         case 'popular':
-          // يمكن إضافة منطق الشعبية لاحقاً (عدد المشاهدات، التحميلات، إلخ)
-          // حالياً سنرتب حسب طول التقرير (التقارير الأطول قد تكون أكثر شمولاً)
           return (b.generatedReport?.length || 0) - (a.generatedReport?.length || 0);
+        
+        case 'rating':
+          if ((b.averageRating || 0) !== (a.averageRating || 0)) {
+            return (b.averageRating || 0) - (a.averageRating || 0);
+          }
+          return (b.totalRatings || 0) - (a.totalRatings || 0);
         
         default:
           return 0;
@@ -377,24 +437,27 @@ const BlogPage: React.FC = () => {
                 >
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
                 </svg>
-                <select
+              <select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as 'newest' | 'oldest' | 'popular' | 'alphabetical')}
+                  onChange={(e) => setSortBy(e.target.value as 'newest' | 'oldest' | 'popular' | 'alphabetical' | 'rating')}
                   className={`w-full ${locale === 'ar' ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white appearance-none cursor-pointer transition-all hover:border-blue-400`}
-                >
-                  <option value="newest">
-                    {locale === 'ar' ? '📅 الأحدث أولاً' : '📅 Newest First'}
-                  </option>
-                  <option value="oldest">
-                    {locale === 'ar' ? '📆 الأقدم أولاً' : '📆 Oldest First'}
-                  </option>
-                  <option value="alphabetical">
-                    {locale === 'ar' ? '🔤 ترتيب أبجدي' : '🔤 Alphabetical'}
-                  </option>
-                  <option value="popular">
-                    {locale === 'ar' ? '⭐ الأكثر شمولاً' : '⭐ Most Comprehensive'}
-                  </option>
-                </select>
+              >
+                <option value="newest">
+                  {locale === 'ar' ? '📅 الأحدث أولاً' : '📅 Newest First'}
+                </option>
+                <option value="oldest">
+                  {locale === 'ar' ? '📆 الأقدم أولاً' : '📆 Oldest First'}
+                </option>
+                <option value="rating">
+                  {locale === 'ar' ? '⭐ الأعلى تقييماً' : '⭐ Highest Rated'}
+                </option>
+                <option value="popular">
+                  {locale === 'ar' ? '📊 الأكثر شمولاً' : '📊 Most Comprehensive'}
+                </option>
+                <option value="alphabetical">
+                  {locale === 'ar' ? '🔤 ترتيب أبجدي' : '🔤 Alphabetical'}
+                </option>
+              </select>
               </div>
             </div>
             
@@ -513,6 +576,22 @@ const BlogPage: React.FC = () => {
                   </p>
                   <meta itemProp="url" content={`${window.location.origin}/blog/${report._id}`} />
                   <meta itemProp="image" content={report.userId?.avatarUrl ? `${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5000'}${report.userId.avatarUrl}` : `${window.location.origin}/logo512.png`} />
+
+                  {/* Rating */}
+                  {showRatings && (
+                    <div className="mb-4 pb-4 border-b border-gray-200 dark:border-gray-700" onClick={(e) => e.stopPropagation()}>
+                      <RatingStars
+                        reportId={report._id}
+                        averageRating={report.averageRating || 0}
+                        totalRatings={report.totalRatings || 0}
+                        userRating={report.ratings?.find(r => r.userId === user?._id)?.rating}
+                        onRate={(rating) => handleRate(report._id, rating)}
+                        readonly={!user}
+                        showCount={true}
+                        size="md"
+                      />
+                    </div>
+                  )}
 
                   {/* Prompt */}
                   {report.prompt && (
