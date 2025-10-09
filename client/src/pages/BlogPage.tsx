@@ -39,7 +39,8 @@ const BlogPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLanguage, setSelectedLanguage] = useState<'all' | 'ar' | 'en'>('all');
-  const [sortBy, setSortBy] = useState<'newest' | 'oldest'>('newest');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'popular' | 'alphabetical'>('newest');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [user, setUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { locale, t } = useLocale();
@@ -87,10 +88,30 @@ const BlogPage: React.FC = () => {
       filtered = filtered.filter(report => report.language === selectedLanguage);
     }
 
+    // Sorting logic
     filtered.sort((a, b) => {
-      const dateA = new Date(a.generatedAt || a.createdAt).getTime();
-      const dateB = new Date(b.generatedAt || b.createdAt).getTime();
-      return sortBy === 'newest' ? dateB - dateA : dateA - dateB;
+      switch (sortBy) {
+        case 'newest':
+          const dateA = new Date(a.generatedAt || a.createdAt).getTime();
+          const dateB = new Date(b.generatedAt || b.createdAt).getTime();
+          return dateB - dateA;
+        
+        case 'oldest':
+          const oldDateA = new Date(a.generatedAt || a.createdAt).getTime();
+          const oldDateB = new Date(b.generatedAt || b.createdAt).getTime();
+          return oldDateA - oldDateB;
+        
+        case 'alphabetical':
+          return a.filename.localeCompare(b.filename);
+        
+        case 'popular':
+          // يمكن إضافة منطق الشعبية لاحقاً (عدد المشاهدات، التحميلات، إلخ)
+          // حالياً سنرتب حسب طول التقرير (التقارير الأطول قد تكون أكثر شمولاً)
+          return (b.generatedReport?.length || 0) - (a.generatedReport?.length || 0);
+        
+        default:
+          return 0;
+      }
     });
 
     setFilteredReports(filtered);
@@ -234,7 +255,8 @@ const BlogPage: React.FC = () => {
       {/* Filters Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8">
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="flex flex-col md:flex-row gap-4 mb-4">
+            <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Search */}
             <div className="relative">
               <Search className={`absolute ${locale === 'ar' ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5`} />
@@ -262,15 +284,64 @@ const BlogPage: React.FC = () => {
             </div>
 
             {/* Sort By */}
-            <div>
+            <div className="relative">
+              <svg 
+                className={`absolute ${locale === 'ar' ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5`}
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+              </svg>
               <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as 'newest' | 'oldest')}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                onChange={(e) => setSortBy(e.target.value as 'newest' | 'oldest' | 'popular' | 'alphabetical')}
+                className={`w-full ${locale === 'ar' ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white appearance-none cursor-pointer transition-all hover:border-blue-400`}
               >
-                <option value="newest">{locale === 'ar' ? 'الأحدث أولاً' : 'Newest First'}</option>
-                <option value="oldest">{locale === 'ar' ? 'الأقدم أولاً' : 'Oldest First'}</option>
+                <option value="newest">
+                  {locale === 'ar' ? '📅 الأحدث أولاً' : '📅 Newest First'}
+                </option>
+                <option value="oldest">
+                  {locale === 'ar' ? '📆 الأقدم أولاً' : '📆 Oldest First'}
+                </option>
+                <option value="alphabetical">
+                  {locale === 'ar' ? '🔤 ترتيب أبجدي' : '🔤 Alphabetical'}
+                </option>
+                <option value="popular">
+                  {locale === 'ar' ? '⭐ الأكثر شمولاً' : '⭐ Most Comprehensive'}
+                </option>
               </select>
+            </div>
+            </div>
+            
+            {/* View Mode Toggle */}
+            <div className="flex gap-2 md:ml-4">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-3 rounded-lg transition-all ${
+                  viewMode === 'grid'
+                    ? 'bg-blue-600 text-white shadow-lg'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+                title={locale === 'ar' ? 'عرض شبكي' : 'Grid View'}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                </svg>
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-3 rounded-lg transition-all ${
+                  viewMode === 'list'
+                    ? 'bg-blue-600 text-white shadow-lg'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                }`}
+                title={locale === 'ar' ? 'عرض قائمة' : 'List View'}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              </button>
             </div>
           </div>
         </div>
@@ -289,11 +360,18 @@ const BlogPage: React.FC = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className={viewMode === 'grid' 
+            ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8' 
+            : 'flex flex-col gap-6'
+          }>
             {filteredReports.map((report) => (
               <article
                 key={report._id}
-                className="bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer transform hover:-translate-y-2"
+                className={`bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden group cursor-pointer ${
+                  viewMode === 'grid' 
+                    ? 'transform hover:-translate-y-2' 
+                    : 'flex flex-row hover:bg-gray-50 dark:hover:bg-gray-700'
+                }`}
                 onClick={() => handleViewReport(report._id)}
                 itemScope
                 itemType="https://schema.org/Article"
