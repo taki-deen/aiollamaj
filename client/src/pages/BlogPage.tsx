@@ -48,7 +48,7 @@ const BlogPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchIn, setSearchIn] = useState<'all' | 'title' | 'content' | 'author'>('all');
   const [selectedLanguage, setSelectedLanguage] = useState<'all' | 'ar' | 'en'>('all');
-  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'popular' | 'alphabetical' | 'rating'>('newest');
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'popular' | 'alphabetical' | 'rating' | 'comments'>('newest');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [user, setUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -188,6 +188,9 @@ const BlogPage: React.FC = () => {
             return (b.averageRating || 0) - (a.averageRating || 0);
           }
           return (b.totalRatings || 0) - (a.totalRatings || 0);
+        
+        case 'comments':
+          return (b.commentsCount || 0) - (a.commentsCount || 0);
         
         default:
           return 0;
@@ -440,7 +443,7 @@ const BlogPage: React.FC = () => {
                 </svg>
               <select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as 'newest' | 'oldest' | 'popular' | 'alphabetical' | 'rating')}
+                  onChange={(e) => setSortBy(e.target.value as 'newest' | 'oldest' | 'popular' | 'alphabetical' | 'rating' | 'comments')}
                   className={`w-full ${locale === 'ar' ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white appearance-none cursor-pointer transition-all hover:border-blue-400`}
               >
                 <option value="newest">
@@ -451,6 +454,9 @@ const BlogPage: React.FC = () => {
                 </option>
                 <option value="rating">
                   {locale === 'ar' ? '⭐ الأعلى تقييماً' : '⭐ Highest Rated'}
+                </option>
+                <option value="comments">
+                  {locale === 'ar' ? '💬 الأكثر تعليقاً' : '💬 Most Commented'}
                 </option>
                 <option value="popular">
                   {locale === 'ar' ? '📊 الأكثر شمولاً' : '📊 Most Comprehensive'}
