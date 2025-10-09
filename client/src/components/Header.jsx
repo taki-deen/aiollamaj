@@ -1,17 +1,23 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLocale } from '../contexts/LocaleContext';
 
 const Header = ({ user, onLogout }) => {
+  const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
   const { locale, toggleLocale, t } = useLocale();
   const apiRoot = (process.env.REACT_APP_API_URL || 'http://localhost:5000/api').replace('/api','');
+  
   return (
     <header className="bg-white/90 backdrop-blur-md shadow-xl border-b border-white/20 sticky top-0 z-50 dark:bg-slate-900/60 dark:border-slate-800">
       <div className="max-w-7xl mx-auto px-2 sm:px-4 lg:px-8">
         <div className="flex justify-between items-center py-2 sm:py-4">
           <div className="flex items-center">
-            <div className="flex items-center space-x-2 sm:space-x-3">
+            <button 
+              onClick={() => navigate('/')}
+              className="flex items-center space-x-2 sm:space-x-3 hover:opacity-80 transition-opacity cursor-pointer"
+            >
               <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg sm:rounded-xl flex items-center justify-center">
                 <svg className="w-4 h-4 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
@@ -23,7 +29,7 @@ const Header = ({ user, onLogout }) => {
                 </h1>
                 <p className="text-xs text-gray-500 dark:text-slate-400">{t('welcomeMessage')}</p>
               </div>
-            </div>
+            </button>
           </div>
           {/* Controls */}
           <div className="flex items-center gap-1 sm:gap-2">
