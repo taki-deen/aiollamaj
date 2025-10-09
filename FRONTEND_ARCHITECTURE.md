@@ -1961,13 +1961,95 @@ Sitemap: /sitemap.xml
 
 ---
 
+## 🌍 Environment Variables & Dynamic URLs
+
+### الاستخدام الموحد:
+
+```typescript
+// API Base URL
+const API_BASE = process.env.REACT_APP_API_URL || 'http://localhost:5000/api';
+
+// API Root (للصور والملفات)
+const API_ROOT = process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5000';
+
+// Client Base URL (ديناميكي)
+const CLIENT_URL = window.location.origin;
+```
+
+### الفوائد:
+- ✅ تغيير URL من ملف واحد (`.env`)
+- ✅ دعم بيئات متعددة (dev, staging, production)
+- ✅ URLs ديناميكية للـ SEO
+- ✅ سهولة النشر على أي domain
+
+### الملفات المحدثة (19 ملف):
+```
+✅ BlogPage.tsx
+✅ BlogPostPage.tsx
+✅ seo.ts
+✅ Sidebar.tsx
+✅ Header.jsx
+✅ Login.jsx
+✅ Register.jsx
+✅ ReportGenerator.tsx
+✅ UserReports.tsx
+✅ CreateReportPage.tsx
+✅ VerifyOTPPage.tsx
+✅ ResetPasswordPage.tsx
+✅ ForgotPasswordPage.tsx
+✅ VerifyEmailPage.tsx
+✅ FileUpload.tsx
+✅ AdminDashboard.tsx
+✅ UserManagement.tsx
+✅ UserSettings.tsx
+✅ AIChatAdmin.tsx
+```
+
+---
+
+## 🎯 Logo Navigation
+
+### الميزة:
+اللوجو الآن قابل للنقر ويرجع للصفحة الرئيسية!
+
+```tsx
+// Header.jsx
+import { useNavigate } from 'react-router-dom';
+
+const Header = ({ user, onLogout }) => {
+  const navigate = useNavigate();
+  
+  return (
+    <button 
+      onClick={() => navigate('/')}
+      className="flex items-center hover:opacity-80 transition-opacity cursor-pointer"
+    >
+      <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg">
+        {/* Logo SVG */}
+      </div>
+      <div className="hidden sm:block">
+        <h1>{t('welcome')}</h1>
+      </div>
+    </button>
+  );
+};
+```
+
+### UX محسّن:
+- ✅ نقر على اللوجو → `/` (الصفحة الرئيسية)
+- ✅ Hover effect (opacity)
+- ✅ Cursor pointer
+- ✅ يعمل من أي صفحة في التطبيق
+
+---
+
 **آخر تحديث:** 8 أكتوبر 2025
 
-**الإصدار:** 4.0
+**الإصدار:** 4.1
 
 **الحالة:** ✅ قيد الإنتاج والتشغيل
 
-**الميزات الجديدة:** Blog System, SEO Optimization, Public Reports, Schema.org, Social Media Cards
+**الميزات الجديدة:** Blog System, SEO Optimization, Environment Variables, Logo Navigation, Avatar Upload (10MB)
 
 **التقنيات:** React 18, TypeScript, Tailwind CSS, React Router, React Helmet, Axios
 

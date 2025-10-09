@@ -502,7 +502,7 @@ const register = async (req, res) => {
 
 ```
 الإدخال:
-  ↓ File (image: jpg, png, gif)
+  ↓ File (image: jpg, png, webp, Max: 10MB)
 
 العملية:
   1. حفظ الصورة في /uploads/avatars/
@@ -511,6 +511,30 @@ const register = async (req, res) => {
   
 الإخراج:
   ↓ { avatarUrl }
+```
+
+**التحديد:**
+```javascript
+// Multer Configuration
+const storage = multer.diskStorage({
+  destination: './uploads/avatars/',
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `${Date.now()}-${req.user._id}${ext}`);
+  }
+});
+
+const fileFilter = (req, file, cb) => {
+  const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+  if (allowed.includes(file.mimetype)) return cb(null, true);
+  cb(new Error('Only image files are allowed'));
+};
+
+const upload = multer({ 
+  storage, 
+  fileFilter, 
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB
+});
 ```
 
 ---
@@ -2035,13 +2059,69 @@ PATCH /api/reports/:id/toggle-public → تبديل حالة التقرير
 
 ---
 
+## 📸 Avatar Upload Configuration
+
+### الإعدادات الحالية:
+
+| المتغير | القيمة | الوصف |
+|---------|--------|-------|
+| **Max File Size** | 10MB | الحد الأقصى لحجم الصورة |
+| **Allowed Types** | JPG, PNG, WebP | الصيغ المدعومة |
+| **Storage Path** | `./uploads/avatars/` | مكان الحفظ |
+| **Naming Pattern** | `timestamp-userId.ext` | نمط التسمية |
+
+### Multer Configuration:
+
+```javascript
+// server/routes/auth.js
+const storage = multer.diskStorage({
+  destination: './uploads/avatars/',
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `${Date.now()}-${req.user?._id || 'guest'}${ext}`);
+  }
+});
+
+const fileFilter = (req, file, cb) => {
+  const allowed = ['image/jpeg', 'image/png', 'image/webp'];
+  if (allowed.includes(file.mimetype)) {
+    return cb(null, true);
+  }
+  cb(new Error('Only image files are allowed'));
+};
+
+const upload = multer({ 
+  storage, 
+  fileFilter, 
+  limits: { fileSize: 10 * 1024 * 1024 } // 10MB
+});
+```
+
+### Express Body Size:
+
+```javascript
+// server/index.js
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+```
+
+### ملخص الحدود:
+
+```
+📸 Avatar Images:     10MB
+📊 CSV/Excel Files:   10MB
+📦 Express Body:      50MB
+```
+
+---
+
 **آخر تحديث:** 8 أكتوبر 2025
 
-**الإصدار:** 4.0
+**الإصدار:** 4.1
 
 **الحالة:** ✅ قيد الإنتاج والتشغيل
 
-**الميزات الجديدة:** Blog System, SEO Optimization, Public/Private Reports, Schema.org, Social Media Integration
+**الميزات الجديدة:** Blog System, SEO Optimization, Avatar Upload (10MB), Public/Private Reports, Schema.org
 
 ---
 
