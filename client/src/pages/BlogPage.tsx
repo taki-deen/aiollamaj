@@ -523,55 +523,49 @@ const BlogPage: React.FC = () => {
                 itemScope
                 itemType="https://schema.org/Article"
               >
-                {/* Card Header */}
-                <div className="bg-gradient-to-r from-blue-500 to-indigo-500 p-6 text-white">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex-1">
-                      <h3 className="text-xl font-bold mb-2 line-clamp-2 group-hover:text-blue-100 transition-colors" itemProp="headline">
-                        {report.filename}
-                      </h3>
-                      <div className="flex items-center gap-2 text-blue-100 text-sm">
-                        <Globe className="w-4 h-4" />
-                        <span>{report.language === 'ar' ? 'العربية' : 'English'}</span>
-                      </div>
-                    </div>
-                    <FileText className="w-8 h-8 text-blue-200" />
-                  </div>
-                </div>
-
                 {/* Card Body */}
                 <div className="p-6">
-                  {/* Author Section with Avatar */}
-                  <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+                  {/* Author Section with Avatar - في الأول */}
+                  <div className="flex items-center gap-4 mb-6">
                     {report.userId?.avatarUrl ? (
                       <img
                         src={`${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5000'}${report.userId.avatarUrl}`}
                         alt={`${report.userId.firstName} ${report.userId.lastName}`}
-                        className="w-12 h-12 rounded-full object-cover border-2 border-blue-200 dark:border-blue-700 shadow-md"
+                        className="w-16 h-16 rounded-full object-cover border-3 border-blue-500 dark:border-blue-400 shadow-lg ring-4 ring-blue-100 dark:ring-blue-900"
                       />
                     ) : (
-                      <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold text-base border-2 border-blue-200 dark:border-blue-700 shadow-md">
+                      <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-xl border-3 border-blue-400 shadow-lg ring-4 ring-blue-100 dark:ring-blue-900">
                         {getInitials(report.userId?.firstName || 'U', report.userId?.lastName || 'U')}
                       </div>
                     )}
                     <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <User className="w-4 h-4 text-gray-500 dark:text-gray-400" />
-                        <span className="font-semibold text-gray-900 dark:text-white" itemProp="author" itemScope itemType="https://schema.org/Person">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-bold text-lg text-gray-900 dark:text-white" itemProp="author" itemScope itemType="https://schema.org/Person">
                           <span itemProp="name">{report.userId?.firstName} {report.userId?.lastName}</span>
                         </span>
                       </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Calendar className="w-3 h-3 text-gray-400" />
-                        <time className="text-xs text-gray-500 dark:text-gray-400" itemProp="datePublished" dateTime={report.generatedAt || report.createdAt}>
+                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <Calendar className="w-4 h-4" />
+                        <time itemProp="datePublished" dateTime={report.generatedAt || report.createdAt}>
                           {formatDate(report.generatedAt || report.createdAt)}
                         </time>
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Globe className="w-4 h-4 text-gray-500 dark:text-gray-400" />
+                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                          {report.language === 'ar' ? '🇸🇦 عربي' : '🇺🇸 English'}
+                        </span>
                       </div>
                     </div>
                   </div>
 
+                  {/* Report Title - مخفي اسم الملف، نعرض من المحتوى */}
+                  <h3 className="text-xl font-bold mb-3 text-gray-900 dark:text-white line-clamp-2" itemProp="headline">
+                    {report.prompt || report.filename.replace(/\.(csv|xlsx|xls)$/i, '')}
+                  </h3>
+
                   {/* Excerpt */}
-                  <p className="text-gray-600 dark:text-gray-300 mb-4 line-clamp-3 text-sm" itemProp="description">
+                  <p className="text-gray-600 dark:text-gray-300 mb-4 line-clamp-3 text-sm leading-relaxed" itemProp="description">
                     {getExcerpt(report.generatedReport)}
                   </p>
                   <meta itemProp="url" content={`${window.location.origin}/blog/${report._id}`} />
@@ -593,17 +587,7 @@ const BlogPage: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Prompt */}
-                  {report.prompt && (
-                    <div className="bg-blue-50 dark:bg-gray-700 rounded-lg p-3 mb-4">
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                        {locale === 'ar' ? 'الطلب:' : 'Prompt:'}
-                      </p>
-                      <p className="text-sm text-gray-700 dark:text-gray-200 line-clamp-2">
-                        {report.prompt}
-                      </p>
-                    </div>
-                  )}
+                  {/* تم إزالة قسم Prompt لأنه أصبح العنوان */}
 
                   {/* Actions */}
                   <div className="flex gap-2">
