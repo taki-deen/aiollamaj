@@ -48,7 +48,7 @@ const BlogPage: React.FC = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchIn, setSearchIn] = useState<'all' | 'title' | 'content' | 'author'>('all');
   const [selectedLanguage, setSelectedLanguage] = useState<'all' | 'ar' | 'en'>('all');
-  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'popular' | 'alphabetical' | 'rating' | 'comments'>('newest');
+  const [sortBy, setSortBy] = useState<'newest' | 'popular' | 'alphabetical' | 'rating' | 'comments'>('newest');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [user, setUser] = useState<User | null>(null);
@@ -171,7 +171,6 @@ const BlogPage: React.FC = () => {
       
       switch (sortBy) {
         case 'newest':
-        case 'oldest':
           const dateA = new Date(a.generatedAt || a.createdAt).getTime();
           const dateB = new Date(b.generatedAt || b.createdAt).getTime();
           comparison = dateB - dateA;
@@ -450,14 +449,11 @@ const BlogPage: React.FC = () => {
                 </svg>
               <select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as 'newest' | 'oldest' | 'popular' | 'alphabetical' | 'rating' | 'comments')}
+                  onChange={(e) => setSortBy(e.target.value as 'newest' | 'popular' | 'alphabetical' | 'rating' | 'comments')}
                   className={`w-full ${locale === 'ar' ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white appearance-none cursor-pointer transition-all hover:border-blue-400`}
               >
                 <option value="newest">
-                  {locale === 'ar' ? '📅 الأحدث أولاً' : '📅 Newest First'}
-                </option>
-                <option value="oldest">
-                  {locale === 'ar' ? '📆 الأقدم أولاً' : '📆 Oldest First'}
+                  {locale === 'ar' ? '📅 التاريخ' : '📅 Date'}
                 </option>
                 <option value="rating">
                   {locale === 'ar' ? '⭐ الأعلى تقييماً' : '⭐ Highest Rated'}
