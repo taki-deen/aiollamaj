@@ -367,6 +367,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onBack }) => {
                         ? 'bg-green-600' 
                         : 'bg-gray-300 dark:bg-gray-600'
                     } ${savingSettings ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    dir="ltr"
                   >
                     <span
                       className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
