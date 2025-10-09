@@ -21,6 +21,7 @@ interface User {
   role: string;
   firstName: string;
   lastName: string;
+  avatarUrl?: string;
 }
 
 interface CommentsProps {
