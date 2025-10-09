@@ -371,6 +371,77 @@ const updateRatingsSettings = async (req, res) => {
   }
 };
 
+const updateReport = async (req, res) => {
+  try {
+    const { reportId } = req.params;
+    const { prompt, language, isPublic } = req.body;
+    
+    if (!req.user) {
+      return sendError(res, 'Authentication required', 401);
+    }
+    
+    const report = await findReportById(reportId);
+    checkReportOwnership(report, req.user._id);
+    
+    if (prompt !== undefined) report.prompt = prompt;
+    if (language !== undefined) report.language = language;
+    if (isPublic !== undefined) report.isPublic = isPublic;
+    
+    await report.save();
+    
+    sendSuccess(res, { report }, 'Report updated successfully');
+  } catch (error) {
+    console.error('Update report error:', error);
+    const statusCode = error.message.includes('not found') ? 404 : 
+                       error.message.includes('Access denied') ? 403 : 500;
+    sendError(res, error.message || 'Failed to update report', statusCode, error);
+  }
+};
+
+const regenerateReport = async (req, res) => {
+  try {
+    const { reportId } = req.params;
+    const { prompt, language } = req.body;
+    
+    if (!req.user) {
+      return sendError(res, 'Authentication required', 401);
+    }
+    
+    const report = await findReportById(reportId);
+    checkReportOwnership(report, req.user._id);
+    
+    if (!report.data || report.data.length === 0) {
+      return sendError(res, 'No data available for regeneration', 400);
+    }
+    
+    report.status = 'processing';
+    if (prompt) report.prompt = prompt;
+    if (language) report.language = language;
+    await report.save();
+    
+    const generatedText = await generateReport(report.data, report.prompt, report.language);
+    
+    report.generatedReport = generatedText;
+    report.status = 'completed';
+    report.generatedAt = new Date();
+    await report.save();
+    
+    sendSuccess(res, { report }, 'Report regenerated successfully');
+  } catch (error) {
+    console.error('Regenerate report error:', error);
+    
+    const report = await Report.findById(req.params.reportId);
+    if (report) {
+      report.status = 'error';
+      await report.save();
+    }
+    
+    const statusCode = error.message?.includes('not found') ? 404 : 
+                       error.message?.includes('Access denied') ? 403 : 500;
+    sendError(res, error.message || 'Failed to regenerate report', statusCode, error);
+  }
+};
+
 module.exports = {
   uploadFile,
   generateAReport,
@@ -380,6 +451,8 @@ module.exports = {
   downloadReport,
   emailReport,
   togglePublicStatus,
+  updateReport,
+  regenerateReport,
   deleteReport,
   getAllReportsForAdmin,
   deleteReportByAdmin,

@@ -11,6 +11,8 @@ const {
   downloadReport,
   emailReport,
   togglePublicStatus,
+  updateReport,
+  regenerateReport,
   deleteReport,
   getAllReportsForAdmin,
   deleteReportByAdmin,
@@ -74,6 +76,12 @@ router.post('/:reportId/email', downloadLimiter, authenticate, emailReport);
 
 // Toggle public status (requires authentication)
 router.patch('/:reportId/toggle-public', authenticate, togglePublicStatus);
+
+// Update report metadata (requires authentication)
+router.put('/:reportId', authenticate, updateReport);
+
+// Regenerate report with new prompt/language (requires authentication)
+router.post('/:reportId/regenerate', authenticate, aiLimiter, regenerateReport);
 
 // Delete report (optional authentication)
 router.delete('/:reportId', optionalAuth, deleteReport);

@@ -350,6 +350,16 @@ const UserReports: React.FC<UserReportsProps> = ({ user, onUploadNew }) => {
                       {report.status === 'completed' && (
                         <>
                           <button
+                            onClick={() => onNavigate?.(`/edit-report/${report._id}`)}
+                            className="px-4 py-2 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors duration-200"
+                            title={locale === 'ar' ? 'تعديل' : 'Edit'}
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                          </button>
+
+                          <button
                             onClick={() => downloadPDF(report._id)}
                             className="px-4 py-2 bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 rounded-lg hover:bg-green-200 dark:hover:bg-green-800 transition-colors duration-200"
                             title={locale === 'ar' ? 'تحميل' : 'Download'}

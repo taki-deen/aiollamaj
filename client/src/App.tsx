@@ -16,6 +16,7 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import BlogPage from './pages/BlogPage';
 import BlogPostPage from './pages/BlogPostPage';
+import EditReportPage from './pages/EditReportPage';
 
 interface User {
   _id: string;
@@ -119,6 +120,10 @@ function App() {
                 <ReportsPage user={user} />
               </Layout>
             ) : <Navigate to="/login" replace />
+          } />
+
+          <Route path="/edit-report/:reportId" element={
+            user ? <EditReportPage /> : <Navigate to="/login" replace />
           } />
           
           <Route path="/settings" element={
