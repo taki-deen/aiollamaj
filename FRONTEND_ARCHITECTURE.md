@@ -40,6 +40,8 @@
 - 🗺️ **React Router** للتنقل السلس
 - 📚 **نظام المدونة** للتقارير العامة
 - 🔍 **SEO Optimization** مع React Helmet
+- ⭐ **نظام التقييمات** (5 نجوم)
+- 💬 **نظام التعليقات** (مع Moderation)
 
 ### المميزات الرئيسية
 
@@ -798,6 +800,190 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({
 3. **Users Management** - إدارة المستخدمين
 4. **Recent Reports** - آخر التقارير
 5. **System Health** - حالة النظام
+
+---
+
+### 10. RatingStars Component (`components/RatingStars.tsx`)
+
+**الهدف:** عرض وإدارة تقييمات النجوم (1-5)
+
+```
+┌──────────────────────────────────────┐
+│  ⭐⭐⭐⭐⭐  4.8 (152 تقييم)        │
+└──────────────────────────────────────┘
+```
+
+**المميزات:**
+- ✅ عرض متوسط التقييم
+- ✅ عرض عدد التقييمات
+- ✅ Hover Effect (معاينة قبل التقييم)
+- ✅ Read-only Mode (للعرض فقط)
+- ✅ أحجام متعددة (sm, md, lg)
+- ✅ حالة تقييم المستخدم
+- ✅ منع التقييم المتكرر
+
+**الكود:**
+```typescript
+interface RatingStarsProps {
+  reportId: string;
+  averageRating: number;
+  totalRatings: number;
+  userRating?: number;
+  onRate?: (rating: number) => void;
+  readonly?: boolean;
+  showCount?: boolean;
+  size?: 'sm' | 'md' | 'lg';
+}
+
+const RatingStars: React.FC<RatingStarsProps> = ({
+  reportId,
+  averageRating,
+  totalRatings,
+  userRating,
+  onRate,
+  readonly = false,
+  showCount = true,
+  size = 'md'
+}) => {
+  const [hoverRating, setHoverRating] = useState(0);
+  
+  const handleClick = (rating: number) => {
+    if (!readonly && onRate) {
+      onRate(rating);
+    }
+  };
+  
+  return (
+    <div className="flex items-center gap-2">
+      {[1, 2, 3, 4, 5].map((star) => (
+        <Star
+          key={star}
+          filled={star <= (hoverRating || userRating || averageRating)}
+          onClick={() => handleClick(star)}
+          onHover={() => setHoverRating(star)}
+        />
+      ))}
+      
+      {showCount && (
+        <span>{averageRating.toFixed(1)} ({totalRatings})</span>
+      )}
+    </div>
+  );
+};
+```
+
+---
+
+### 11. Comments Component (`components/Comments.tsx`)
+
+**الهدف:** عرض وإدارة التعليقات على التقارير
+
+```
+┌──────────────────────────────────────┐
+│  💬 التعليقات (15)                  │
+├──────────────────────────────────────┤
+│  [اكتب تعليقك هنا...]              │
+│  [0/1000]              [نشر التعليق] │
+├──────────────────────────────────────┤
+│  👤 أحمد علي • منذ ساعتين           │
+│  تقرير ممتاز ومفيد!                 │
+│                         [🗑️ حذف]     │
+├──────────────────────────────────────┤
+│  👤 سارة محمد • منذ 3 ساعات         │
+│  ⚠️ في انتظار الموافقة              │
+│  شكراً على المعلومات...             │
+│              [✅ موافقة] [🗑️ حذف]   │
+└──────────────────────────────────────┘
+```
+
+**المميزات:**
+- ✅ نموذج إضافة تعليق (للمسجلين فقط)
+- ✅ عداد أحرف (1000 حرف كحد أقصى)
+- ✅ عرض صورة المستخدم
+- ✅ تنسيق التاريخ الذكي (منذ ساعة، منذ يوم...)
+- ✅ حالة "في انتظار الموافقة" (Pending)
+- ✅ حذف التعليق (للكاتب/الإدمن)
+- ✅ موافقة/رفض (للإدمن فقط)
+- ✅ Empty State (لا توجد تعليقات)
+- ✅ Loading State
+
+**الكود الأساسي:**
+```typescript
+interface CommentsProps {
+  reportId: string;
+  user: User | null;
+}
+
+const Comments: React.FC<CommentsProps> = ({ reportId, user }) => {
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [newComment, setNewComment] = useState('');
+  
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const response = await axios.post(
+      `/api/comments/${reportId}`,
+      { content: newComment },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    
+    if (response.data.success) {
+      alert('تم إضافة التعليق، في انتظار الموافقة');
+      fetchComments();
+    }
+  };
+  
+  const handleDelete = async (commentId) => {
+    await axios.delete(`/api/comments/${commentId}`);
+    setComments(comments.filter(c => c._id !== commentId));
+  };
+  
+  const handleApprove = async (commentId, isApproved) => {
+    await axios.patch(`/api/comments/${commentId}/approve`, { isApproved });
+    fetchComments();
+  };
+  
+  return (
+    <div>
+      {/* Comment Form */}
+      {user ? (
+        <form onSubmit={handleSubmit}>
+          <textarea
+            value={newComment}
+            onChange={(e) => setNewComment(e.target.value)}
+            maxLength={1000}
+          />
+          <button type="submit">نشر التعليق</button>
+        </form>
+      ) : (
+        <p>يجب تسجيل الدخول للتعليق</p>
+      )}
+      
+      {/* Comments List */}
+      {comments.map(comment => (
+        <div key={comment._id}>
+          <img src={comment.userId.avatarUrl} />
+          <span>{comment.userId.firstName}</span>
+          <p>{comment.content}</p>
+          
+          {!comment.isApproved && (
+            <span>في انتظار الموافقة</span>
+          )}
+          
+          {user?.role === 'admin' && (
+            <button onClick={() => handleApprove(comment._id, true)}>
+              ✅ موافقة
+            </button>
+          )}
+          
+          <button onClick={() => handleDelete(comment._id)}>
+            🗑️ حذف
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+};
+```
 
 ---
 
@@ -1790,16 +1976,18 @@ npm test
 
 ```
 📁 client/src/
-├── 25+ مكون (Components)
+├── 28+ مكون (Components)
 ├── 12 صفحات (Pages) - بما فيها Blog
 ├── 2 سياق (Contexts)
 ├── 1 Utils (SEO Helpers)
-├── ~10,000 سطر كود
-├── 200+ ترجمة (عربي/إنجليزي)
-├── 60+ واجهة TypeScript
+├── ~11,000 سطر كود
+├── 220+ ترجمة (عربي/إنجليزي)
+├── 70+ واجهة TypeScript
 ├── 100% Responsive
 ├── SEO Score: 95/100
-└── Blog System متكامل
+├── Blog System متكامل
+├── Rating System متكامل
+└── Comments System متكامل
 ```
 
 ---
@@ -1830,9 +2018,30 @@ npm test
 - [x] **SEO Optimization** - React Helmet + Schema.org
 - [x] **Public/Private Toggle** - تبديل حالة التقارير
 - [x] **Author Profiles** - صور ومعلومات الكتّاب
+- [x] **Rating System** - تقييمات 5 نجوم تفاعلية
+  - RatingStars Component
+  - أحجام متعددة (sm, md, lg)
+  - Read-only Mode
+  - Hover Effect
+- [x] **Comments System** - تعليقات مع Moderation
+  - Comments Component كامل
+  - نموذج إضافة تعليق
+  - موافقة/رفض (Admin)
+  - حذف (للكاتب/الإدمن)
+  - عداد أحرف (1000 max)
+- [x] **Advanced Search** - البحث في العنوان/المحتوى/الكاتب
+  - 4 نطاقات بحث
+  - فلترة حسب اللغة
+  - إحصائيات فورية
+- [x] **Multi-Sort** - ترتيب متعدد (التاريخ، التقييم، التعليقات)
+  - 5 أنواع ترتيب
+  - تصاعدي/تنازلي
+  - عرض شبكي/قائمة
 
 ### 📋 في الخطة
 
+- [ ] **Reply to Comments** - الردود على التعليقات
+- [ ] **Like/Dislike** - إعجاب على التعليقات
 - [ ] **PWA** - تحويل لتطبيق Progressive Web App
 - [ ] **Offline Mode** - العمل بدون إنترنت
 - [ ] **Push Notifications** - إشعارات فورية
@@ -1845,6 +2054,128 @@ npm test
 - [ ] **E2E Tests** - Cypress/Playwright
 - [ ] **Performance** - Lazy Loading, Code Splitting
 - [ ] **SEO Optimization** - React Helmet
+
+---
+
+## 🔍 Advanced Search in Blog (البحث المتقدم)
+
+### نظام البحث المتطور:
+
+**الخيارات المتاحة:**
+
+```typescript
+// نطاقات البحث (Search Scopes)
+type SearchScope = 'all' | 'title' | 'content' | 'author';
+
+// أنواع الترتيب (Sort Options)
+type SortBy = 'newest' | 'popular' | 'alphabetical' | 'rating' | 'comments';
+
+// اتجاه الترتيب (Sort Order)
+type SortOrder = 'asc' | 'desc';
+```
+
+**الميزات:**
+
+1. **🔍 البحث متعدد النطاقات:**
+   - البحث في كل شيء (العنوان + المحتوى + الكاتب)
+   - البحث في العنوان فقط
+   - البحث في المحتوى فقط
+   - البحث في اسم الكاتب فقط
+
+2. **🌐 الفلترة حسب اللغة:**
+   - جميع اللغات
+   - العربية فقط
+   - الإنجليزية فقط
+
+3. **📊 الترتيب المتعدد:**
+   - حسب التاريخ (الأحدث/الأقدم)
+   - حسب التقييم (الأعلى/الأقل)
+   - حسب عدد التعليقات (الأكثر/الأقل)
+   - حسب الشمولية (الأطول/الأقصر)
+   - ترتيب أبجدي (أ-ي / A-Z)
+
+4. **📈 إحصائيات البحث:**
+   ```
+   🟢 15 نتيجة للبحث عن: "تحليل البيانات" في المحتوى
+   ```
+
+5. **🎨 عرض النتائج:**
+   - عرض شبكي (Grid) - 3 أعمدة
+   - عرض قائمة (List) - صف واحد
+
+**الكود:**
+```typescript
+const filterAndSortReports = () => {
+  let filtered = [...reports];
+
+  // البحث
+  if (searchTerm) {
+    const searchLower = searchTerm.toLowerCase();
+    
+    filtered = filtered.filter(report => {
+      switch (searchIn) {
+        case 'title':
+          return report.filename.toLowerCase().includes(searchLower);
+        
+        case 'content':
+          return report.generatedReport?.toLowerCase().includes(searchLower);
+        
+        case 'author':
+          return `${report.userId.firstName} ${report.userId.lastName}`
+            .toLowerCase().includes(searchLower);
+        
+        case 'all':
+        default:
+          return (
+            report.filename.toLowerCase().includes(searchLower) ||
+            report.prompt?.toLowerCase().includes(searchLower) ||
+            report.generatedReport?.toLowerCase().includes(searchLower) ||
+            `${report.userId.firstName} ${report.userId.lastName}`
+              .toLowerCase().includes(searchLower)
+          );
+      }
+    });
+  }
+
+  // الفلترة حسب اللغة
+  if (selectedLanguage !== 'all') {
+    filtered = filtered.filter(report => report.language === selectedLanguage);
+  }
+
+  // الترتيب
+  filtered.sort((a, b) => {
+    let comparison = 0;
+    
+    switch (sortBy) {
+      case 'newest':
+        comparison = new Date(b.generatedAt).getTime() - 
+                    new Date(a.generatedAt).getTime();
+        break;
+      
+      case 'rating':
+        comparison = (b.averageRating || 0) - (a.averageRating || 0);
+        break;
+      
+      case 'comments':
+        comparison = (b.commentsCount || 0) - (a.commentsCount || 0);
+        break;
+      
+      case 'popular':
+        comparison = (b.generatedReport?.length || 0) - 
+                    (a.generatedReport?.length || 0);
+        break;
+      
+      case 'alphabetical':
+        comparison = a.filename.localeCompare(b.filename);
+        break;
+    }
+    
+    return sortOrder === 'asc' ? -comparison : comparison;
+  });
+
+  setFilteredReports(filtered);
+};
+```
 
 ---
 
@@ -1868,6 +2199,8 @@ npm test
 // عرض تقرير فردي كامل
 - Hero section احترافي
 - معلومات الكاتب مع الصورة
+- نظام التقييمات (⭐ RatingStars)
+- نظام التعليقات (💬 Comments)
 - Markdown rendering كامل
 - Share buttons (نسخ، مشاركة)
 - Download PDF
@@ -1877,6 +2210,10 @@ npm test
 ### الميزات:
 - ✅ Header ديناميكي (للزوار والمستخدمين)
 - ✅ Sidebar للمستخدمين المسجلين
+- ✅ بحث متقدم (في العنوان/المحتوى/الكاتب)
+- ✅ فلترة حسب اللغة (عربي/إنجليزي)
+- ✅ ترتيب متعدد (التاريخ، التقييم، التعليقات، الشمولية)
+- ✅ عرض التقييمات والتعليقات
 - ✅ CTA مخصص حسب حالة المستخدم
 - ✅ Responsive design كامل
 - ✅ Dark mode support
@@ -2043,15 +2380,15 @@ const Header = ({ user, onLogout }) => {
 
 ---
 
-**آخر تحديث:** 8 أكتوبر 2025
+**آخر تحديث:** 9 أكتوبر 2025
 
-**الإصدار:** 4.1
+**الإصدار:** 4.2
 
 **الحالة:** ✅ قيد الإنتاج والتشغيل
 
-**الميزات الجديدة:** Blog System, SEO Optimization, Environment Variables, Logo Navigation, Avatar Upload (10MB)
+**الميزات الجديدة:** Rating System (⭐ 5 نجوم), Comments System (💬 مع Moderation), Advanced Search (🔍 متقدم), Multi-Sort (📊 ترتيب متعدد)
 
-**التقنيات:** React 18, TypeScript, Tailwind CSS, React Router, React Helmet, Axios
+**التقنيات:** React 18, TypeScript, Tailwind CSS, React Router, React Helmet, Axios, Lucide React
 
 ---
 

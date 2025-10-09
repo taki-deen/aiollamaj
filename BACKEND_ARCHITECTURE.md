@@ -63,16 +63,20 @@ server/
 │
 ├── 📁 models/                       # نماذج MongoDB (Mongoose)
 │   ├── User.js                     # بيانات المستخدمين
-│   └── Report.js                   # بيانات التقارير
+│   ├── Report.js                   # بيانات التقارير
+│   ├── Comment.js                  # التعليقات
+│   └── Settings.js                 # إعدادات النظام
 │
 ├── 📁 controllers/                  # منطق معالجة الطلبات
 │   ├── authController.js           # المصادقة والمستخدمين
 │   ├── reportController.js         # التقارير
+│   ├── commentController.js        # التعليقات
 │   └── aiController.js             # الذكاء الاصطناعي
 │
 ├── 📁 routes/                       # مسارات API
 │   ├── auth.js                     # /api/auth/*
 │   ├── reports.js                  # /api/reports/*
+│   ├── comments.js                 # /api/comments/*
 │   └── ai.js                       # /api/ai/*
 │
 ├── 📁 middleware/                   # وسيطات التحقق
@@ -237,9 +241,38 @@ userSchema.index({ role: 1, isActive: 1 });
   userId: ObjectId (ref: 'User'),   // صاحب التقرير
   isPublic: Boolean (default: true),  // هل التقرير عام؟ (افتراضياً عام)
   language: String,                 // لغة التقرير: 'ar' أو 'en'
+  
+  // Rating System
+  ratings: [{
+    userId: ObjectId (ref: 'User'), // المستخدم الذي قيّم
+    rating: Number (1-5),           // التقييم من 1 إلى 5
+    createdAt: Date                 // تاريخ التقييم
+  }],
+  averageRating: Number (0-5),      // متوسط التقييمات
+  totalRatings: Number,             // عدد التقييمات
+  
+  // Comments Count
+  commentsCount: Number,            // عدد التعليقات (يتم تحديثه تلقائياً)
+  
   createdAt: Date (default: now),   // تاريخ الرفع
   generatedAt: Date                 // تاريخ التوليد
 }
+```
+
+#### الدوال المدمجة:
+
+```javascript
+// حساب متوسط التقييم
+reportSchema.methods.calculateAverageRating = function() {
+  if (this.ratings.length === 0) {
+    this.averageRating = 0;
+    this.totalRatings = 0;
+  } else {
+    const sum = this.ratings.reduce((acc, r) => acc + r.rating, 0);
+    this.averageRating = (sum / this.ratings.length).toFixed(1);
+    this.totalRatings = this.ratings.length;
+  }
+};
 ```
 
 #### حالات التقرير:
@@ -257,6 +290,72 @@ userSchema.index({ role: 1, isActive: 1 });
 reportSchema.index({ userId: 1, createdAt: -1 });
 reportSchema.index({ status: 1 });
 reportSchema.index({ isPublic: 1, status: 1 });
+reportSchema.index({ isPublic: 1, averageRating: -1 }); // للترتيب حسب التقييم
+```
+
+---
+
+### 3. Comment Model (`models/Comment.js`)
+
+**الهدف:** إدارة التعليقات على التقارير العامة
+
+```javascript
+{
+  _id: ObjectId,                    // معرف فريد
+  reportId: ObjectId (ref: 'Report', required), // التقرير المرتبط
+  userId: ObjectId (ref: 'User', required),     // الكاتب
+  content: String (required, maxlength: 1000),  // محتوى التعليق
+  isApproved: Boolean (default: false),         // حالة الموافقة (للإدارة)
+  createdAt: Date (default: now),   // تاريخ الإنشاء
+  updatedAt: Date (default: now)    // تاريخ آخر تحديث
+}
+```
+
+#### الميزات:
+- ✅ نظام موافقة (Moderation) - التعليقات تحتاج موافقة من الإدمن
+- ✅ حد أقصى 1000 حرف
+- ✅ Indexes للأداء
+- ✅ Auto-update لـ updatedAt
+
+#### Indexes:
+
+```javascript
+commentSchema.index({ reportId: 1, createdAt: -1 });
+commentSchema.index({ userId: 1 });
+commentSchema.index({ isApproved: 1 });
+```
+
+---
+
+### 4. Settings Model (`models/Settings.js`)
+
+**الهدف:** إدارة إعدادات النظام القابلة للتغيير
+
+```javascript
+{
+  _id: ObjectId,
+  key: String (required, unique),   // مفتاح الإعداد (مثل: 'showRatings')
+  value: Mixed (required),          // القيمة (أي نوع)
+  description: String,              // وصف الإعداد
+  updatedBy: ObjectId (ref: 'User'),// من قام بالتحديث
+  updatedAt: Date (default: now)    // تاريخ التحديث
+}
+```
+
+#### الدوال الثابتة (Static Methods):
+
+```javascript
+// جلب قيمة إعداد
+Settings.get(key, defaultValue = null)
+
+// مثال:
+const showRatings = await Settings.get('showRatings', true);
+
+// تعيين قيمة إعداد
+Settings.set(key, value, userId = null, description = '')
+
+// مثال:
+await Settings.set('showRatings', false, adminId, 'تعطيل نظام التقييمات');
 ```
 
 ---
@@ -317,6 +416,65 @@ Content-Type: application/json
 | POST | `/api/auth/admin/users` | إنشاء مستخدم جديد |
 | PUT | `/api/auth/admin/users/:id` | تحديث مستخدم |
 | DELETE | `/api/auth/admin/users/:id` | حذف مستخدم |
+
+---
+
+### 💬 Comments Routes (`/api/comments`)
+
+**الهدف:** إدارة التعليقات على التقارير
+
+#### مسارات التعليقات
+
+|| Method | Endpoint | الوصف | المصادقة |
+||--------|----------|-------|----------|
+|| POST | `/api/comments/:reportId` | إضافة تعليق | **مطلوبة** |
+|| GET | `/api/comments/:reportId` | جلب تعليقات تقرير | اختيارية* |
+|| DELETE | `/api/comments/:commentId` | حذف تعليق | **مطلوبة** |
+|| PATCH | `/api/comments/:commentId/approve` | موافقة/رفض (Admin) | **Admin** |
+|| GET | `/api/comments/admin/all` | جميع التعليقات (Admin) | **Admin** |
+
+**ملاحظة:* التعليقات غير المعتمدة تظهر فقط للإدمن
+
+**مثال - إضافة تعليق:**
+```javascript
+POST /api/comments/6123abc...
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "content": "تقرير ممتاز ومفيد جداً!"
+}
+
+// Response:
+{
+  "success": true,
+  "message": "Comment added successfully. Waiting for approval.",
+  "data": {
+    "_id": "789xyz...",
+    "content": "تقرير ممتاز ومفيد جداً!",
+    "userId": { ... },
+    "isApproved": false,
+    "createdAt": "2025-10-09T..."
+  }
+}
+```
+
+**مثال - موافقة على تعليق (Admin):**
+```javascript
+PATCH /api/comments/789xyz.../approve
+Authorization: Bearer <admin_token>
+Content-Type: application/json
+
+{
+  "isApproved": true
+}
+
+// Response:
+{
+  "success": true,
+  "message": "Comment approved successfully"
+}
+```
 
 ---
 
@@ -396,6 +554,32 @@ Content-Type: application/json
 // - معلومات التقرير
 // - PDF مرفق
 ```
+
+**مثال - تقييم تقرير:**
+```javascript
+POST /api/reports/6123abc.../rating
+Authorization: Bearer <token>
+Content-Type: application/json
+
+{
+  "rating": 5
+}
+
+// Response:
+{
+  "success": true,
+  "message": "Rating added successfully",
+  "data": {
+    "averageRating": 4.8,
+    "totalRatings": 15
+  }
+}
+```
+
+**التقييد:**
+- مستخدم واحد يمكنه التقييم مرة واحدة فقط لكل تقرير
+- يمكن تحديث التقييم لاحقاً
+- التقييمات من 1 إلى 5 نجوم فقط
 
 #### مسارات الإدمن
 
@@ -629,7 +813,104 @@ return report
 
 ---
 
-### 3. AI Controller (`controllers/aiController.js`)
+### 3. Comment Controller (`controllers/commentController.js`)
+
+**المسؤولية:** إدارة التعليقات
+
+#### أ) `addComment(req, res)`
+
+```
+الإدخال:
+  ↓ reportId, content
+
+العملية:
+  1. التحقق من محتوى التعليق (1-1000 حرف)
+  2. التحقق من وجود التقرير
+  3. التحقق من أن التقرير عام (isPublic)
+  4. إنشاء التعليق (isApproved: false)
+  5. Populate معلومات المستخدم
+  
+الإخراج:
+  ↓ { comment }
+```
+
+**الحماية:**
+- ✅ لا يمكن التعليق على التقارير الخاصة
+- ✅ التعليقات تحتاج موافقة الإدمن
+- ✅ حد أقصى 1000 حرف
+
+#### ب) `getComments(req, res)`
+
+```
+الإدخال:
+  ↓ reportId
+
+العملية:
+  1. جلب التعليقات المعتمدة (isApproved: true)
+  2. إذا كان المستخدم Admin → جلب كل التعليقات
+  3. Populate معلومات الكاتب
+  4. ترتيب حسب التاريخ (الأحدث أولاً)
+  
+الإخراج:
+  ↓ [comments]
+```
+
+#### ج) `deleteComment(req, res)`
+
+```
+الإدخال:
+  ↓ commentId
+
+العملية:
+  1. جلب التعليق
+  2. التحقق من الملكية أو صلاحيات Admin
+  3. حذف التعليق
+  
+الإخراج:
+  ↓ { success: true }
+```
+
+#### د) `approveComment(req, res)` - Admin Only
+
+```
+الإدخال:
+  ↓ commentId, isApproved (true/false)
+
+العملية:
+  1. التحقق من صلاحيات Admin
+  2. تحديث حالة الموافقة
+  3. Populate معلومات الكاتب
+  
+الإخراج:
+  ↓ { comment }
+```
+
+#### هـ) `getAllComments(req, res)` - Admin Only
+
+```
+الإدخال:
+  ↓ لا شيء
+
+العملية:
+  1. التحقق من صلاحيات Admin
+  2. جلب جميع التعليقات
+  3. Populate (User + Report)
+  4. حساب الإحصائيات
+  
+الإخراج:
+  ↓ {
+    comments: [...],
+    stats: {
+      total: 150,
+      approved: 120,
+      pending: 30
+    }
+  }
+```
+
+---
+
+### 4. AI Controller (`controllers/aiController.js`)
 
 **المسؤولية:** التفاعل المباشر مع AI
 
@@ -1711,13 +1992,13 @@ curl -X POST http://localhost:5000/api/auth/register \
 
 ```
 📁 server/
-├── 15 ملفات رئيسية
-├── ~5,000 سطر من الكود
-├── 10 Models & Controllers & Services
-├── 25+ API Endpoints
+├── 18 ملفات رئيسية
+├── ~6,000 سطر من الكود
+├── 13 Models & Controllers & Services
+├── 35+ API Endpoints
 ├── 7 Rate Limiters
 ├── 8 Email Templates
-└── 80+ دالة ومكون
+└── 100+ دالة ومكون
 ```
 
 ### الميزات
@@ -1757,6 +2038,8 @@ curl -X POST http://localhost:5000/api/auth/register \
 
 ### 📋 في الخطة
 
+- [ ] **Replies on Comments** (الردود على التعليقات)
+- [ ] **Like/Dislike System** (إعجاب/عدم إعجاب)
 - [ ] **WebSocket** للتقارير الحية
 - [ ] **Redis Caching** لتسريع الاستجابة
 - [ ] **Advanced Analytics** رسوم بيانية تفاعلية
@@ -2115,13 +2398,13 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 ---
 
-**آخر تحديث:** 8 أكتوبر 2025
+**آخر تحديث:** 9 أكتوبر 2025
 
-**الإصدار:** 4.1
+**الإصدار:** 4.2
 
 **الحالة:** ✅ قيد الإنتاج والتشغيل
 
-**الميزات الجديدة:** Blog System, SEO Optimization, Avatar Upload (10MB), Public/Private Reports, Schema.org
+**الميزات الجديدة:** Comments System (مع Moderation), Rating System (5 نجوم), Settings System, Advanced Search, Blog Enhancements
 
 ---
 
