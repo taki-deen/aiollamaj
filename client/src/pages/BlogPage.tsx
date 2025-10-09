@@ -49,6 +49,7 @@ const BlogPage: React.FC = () => {
   const [searchIn, setSearchIn] = useState<'all' | 'title' | 'content' | 'author'>('all');
   const [selectedLanguage, setSelectedLanguage] = useState<'all' | 'ar' | 'en'>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'popular' | 'alphabetical' | 'rating' | 'comments'>('newest');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [user, setUser] = useState<User | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -70,7 +71,7 @@ const BlogPage: React.FC = () => {
 
   useEffect(() => {
     filterAndSortReports();
-  }, [reports, searchTerm, searchIn, selectedLanguage, sortBy]);
+  }, [reports, searchTerm, searchIn, selectedLanguage, sortBy, sortOrder]);
 
   const fetchPublicReports = async () => {
     try {
@@ -166,35 +167,41 @@ const BlogPage: React.FC = () => {
 
     // Sorting logic
     filtered.sort((a, b) => {
+      let comparison = 0;
+      
       switch (sortBy) {
         case 'newest':
+        case 'oldest':
           const dateA = new Date(a.generatedAt || a.createdAt).getTime();
           const dateB = new Date(b.generatedAt || b.createdAt).getTime();
-          return dateB - dateA;
-        
-        case 'oldest':
-          const oldDateA = new Date(a.generatedAt || a.createdAt).getTime();
-          const oldDateB = new Date(b.generatedAt || b.createdAt).getTime();
-          return oldDateA - oldDateB;
+          comparison = dateB - dateA;
+          break;
         
         case 'alphabetical':
-          return a.filename.localeCompare(b.filename);
+          comparison = a.filename.localeCompare(b.filename);
+          break;
         
         case 'popular':
-          return (b.generatedReport?.length || 0) - (a.generatedReport?.length || 0);
+          comparison = (b.generatedReport?.length || 0) - (a.generatedReport?.length || 0);
+          break;
         
         case 'rating':
           if ((b.averageRating || 0) !== (a.averageRating || 0)) {
-            return (b.averageRating || 0) - (a.averageRating || 0);
+            comparison = (b.averageRating || 0) - (a.averageRating || 0);
+          } else {
+            comparison = (b.totalRatings || 0) - (a.totalRatings || 0);
           }
-          return (b.totalRatings || 0) - (a.totalRatings || 0);
+          break;
         
         case 'comments':
-          return (b.commentsCount || 0) - (a.commentsCount || 0);
+          comparison = (b.commentsCount || 0) - (a.commentsCount || 0);
+          break;
         
         default:
-          return 0;
+          comparison = 0;
       }
+      
+      return sortOrder === 'asc' ? -comparison : comparison;
     });
 
     setFilteredReports(filtered);
@@ -468,8 +475,28 @@ const BlogPage: React.FC = () => {
               </div>
             </div>
             
+            {/* Sort Order Toggle */}
+            <button
+              onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+              className="p-3 bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 rounded-lg transition-colors"
+              title={sortOrder === 'desc' 
+                ? (locale === 'ar' ? 'تنازلي (من الأكبر للأصغر)' : 'Descending (High to Low)')
+                : (locale === 'ar' ? 'تصاعدي (من الأصغر للأكبر)' : 'Ascending (Low to High)')
+              }
+            >
+              {sortOrder === 'desc' ? (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h9m5-4v12m0 0l-4-4m4 4l4-4" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                </svg>
+              )}
+            </button>
+            
             {/* View Mode Toggle */}
-            <div className="flex gap-2 md:ml-4">
+            <div className="flex gap-2">
               <button
                 onClick={() => setViewMode('grid')}
                 className={`p-3 rounded-lg transition-all ${
