@@ -38,6 +38,7 @@ const BlogPage: React.FC = () => {
   const [filteredReports, setFilteredReports] = useState<Report[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchIn, setSearchIn] = useState<'all' | 'title' | 'content' | 'author'>('all');
   const [selectedLanguage, setSelectedLanguage] = useState<'all' | 'ar' | 'en'>('all');
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'popular' | 'alphabetical'>('newest');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -59,7 +60,7 @@ const BlogPage: React.FC = () => {
 
   useEffect(() => {
     filterAndSortReports();
-  }, [reports, searchTerm, selectedLanguage, sortBy]);
+  }, [reports, searchTerm, searchIn, selectedLanguage, sortBy]);
 
   const fetchPublicReports = async () => {
     try {
@@ -77,11 +78,29 @@ const BlogPage: React.FC = () => {
     let filtered = [...reports];
 
     if (searchTerm) {
-      filtered = filtered.filter(report =>
-        report.filename.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        report.prompt?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        `${report.userId.firstName} ${report.userId.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
-      );
+      const searchLower = searchTerm.toLowerCase();
+      
+      filtered = filtered.filter(report => {
+        switch (searchIn) {
+          case 'title':
+            return report.filename.toLowerCase().includes(searchLower);
+          
+          case 'content':
+            return report.generatedReport?.toLowerCase().includes(searchLower);
+          
+          case 'author':
+            return `${report.userId.firstName} ${report.userId.lastName}`.toLowerCase().includes(searchLower);
+          
+          case 'all':
+          default:
+            return (
+              report.filename.toLowerCase().includes(searchLower) ||
+              report.prompt?.toLowerCase().includes(searchLower) ||
+              report.generatedReport?.toLowerCase().includes(searchLower) ||
+              `${report.userId.firstName} ${report.userId.lastName}`.toLowerCase().includes(searchLower)
+            );
+        }
+      });
     }
 
     if (selectedLanguage !== 'all') {
@@ -255,63 +274,128 @@ const BlogPage: React.FC = () => {
       {/* Filters Section */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-8">
         <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
-          <div className="flex flex-col md:flex-row gap-4 mb-4">
-            <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Search */}
-            <div className="relative">
-              <Search className={`absolute ${locale === 'ar' ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5`} />
-              <input
-                type="text"
-                placeholder={locale === 'ar' ? 'ابحث عن تقرير...' : 'Search reports...'}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className={`w-full ${locale === 'ar' ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white`}
-              />
-            </div>
-
-            {/* Language Filter */}
-            <div className="relative">
-              <Filter className={`absolute ${locale === 'ar' ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5`} />
+          {/* Search Section with Advanced Options */}
+          <div className="mb-4">
+            <div className="flex flex-col sm:flex-row gap-2 mb-2">
+              <div className="flex-1 relative">
+                <Search className={`absolute ${locale === 'ar' ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5`} />
+                <input
+                  type="text"
+                  placeholder={locale === 'ar' ? 'ابحث في التقارير...' : 'Search in reports...'}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className={`w-full ${locale === 'ar' ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white transition-all`}
+                />
+              </div>
+              
+              {/* Search Scope Selector */}
               <select
-                value={selectedLanguage}
-                onChange={(e) => setSelectedLanguage(e.target.value as 'all' | 'ar' | 'en')}
-                className={`w-full ${locale === 'ar' ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white`}
+                value={searchIn}
+                onChange={(e) => setSearchIn(e.target.value as 'all' | 'title' | 'content' | 'author')}
+                className="px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white cursor-pointer transition-all hover:border-blue-400"
               >
-                <option value="all">{locale === 'ar' ? 'جميع اللغات' : 'All Languages'}</option>
-                <option value="ar">{locale === 'ar' ? 'العربية' : 'Arabic'}</option>
-                <option value="en">{locale === 'ar' ? 'الإنجليزية' : 'English'}</option>
-              </select>
-            </div>
-
-            {/* Sort By */}
-            <div className="relative">
-              <svg 
-                className={`absolute ${locale === 'ar' ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5`}
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
-              </svg>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as 'newest' | 'oldest' | 'popular' | 'alphabetical')}
-                className={`w-full ${locale === 'ar' ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white appearance-none cursor-pointer transition-all hover:border-blue-400`}
-              >
-                <option value="newest">
-                  {locale === 'ar' ? '📅 الأحدث أولاً' : '📅 Newest First'}
+                <option value="all">
+                  {locale === 'ar' ? '🔍 البحث في كل شيء' : '🔍 Search Everything'}
                 </option>
-                <option value="oldest">
-                  {locale === 'ar' ? '📆 الأقدم أولاً' : '📆 Oldest First'}
+                <option value="title">
+                  {locale === 'ar' ? '📄 العنوان فقط' : '📄 Title Only'}
                 </option>
-                <option value="alphabetical">
-                  {locale === 'ar' ? '🔤 ترتيب أبجدي' : '🔤 Alphabetical'}
+                <option value="content">
+                  {locale === 'ar' ? '📝 المحتوى فقط' : '📝 Content Only'}
                 </option>
-                <option value="popular">
-                  {locale === 'ar' ? '⭐ الأكثر شمولاً' : '⭐ Most Comprehensive'}
+                <option value="author">
+                  {locale === 'ar' ? '👤 الكاتب فقط' : '👤 Author Only'}
                 </option>
               </select>
             </div>
+            
+            {/* Search Info */}
+            {searchTerm && (
+              <div className="flex items-center gap-2 text-sm">
+                <div className={`px-3 py-1 rounded-full ${
+                  filteredReports.length > 0 
+                    ? 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' 
+                    : 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
+                }`}>
+                  {locale === 'ar' 
+                    ? `${filteredReports.length} نتيجة` 
+                    : `${filteredReports.length} result${filteredReports.length !== 1 ? 's' : ''}`
+                  }
+                </div>
+                <span className="text-gray-500 dark:text-gray-400">
+                  {locale === 'ar' ? 'للبحث عن:' : 'for:'}
+                </span>
+                <span className="font-semibold text-gray-700 dark:text-gray-200">
+                  "{searchTerm}"
+                </span>
+                <span className="text-gray-500 dark:text-gray-400">
+                  {locale === 'ar' ? 'في' : 'in'}
+                </span>
+                <span className="font-semibold text-blue-600 dark:text-blue-400">
+                  {searchIn === 'all' && (locale === 'ar' ? 'كل المحتوى' : 'all content')}
+                  {searchIn === 'title' && (locale === 'ar' ? 'العناوين' : 'titles')}
+                  {searchIn === 'content' && (locale === 'ar' ? 'المحتوى' : 'content')}
+                  {searchIn === 'author' && (locale === 'ar' ? 'الكتّاب' : 'authors')}
+                </span>
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="ml-auto text-red-500 hover:text-red-700 dark:hover:text-red-400 transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Other Filters */}
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+
+              {/* Language Filter */}
+              <div className="relative">
+                <Globe className={`absolute ${locale === 'ar' ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5`} />
+                <select
+                  value={selectedLanguage}
+                  onChange={(e) => setSelectedLanguage(e.target.value as 'all' | 'ar' | 'en')}
+                  className={`w-full ${locale === 'ar' ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white cursor-pointer transition-all hover:border-blue-400`}
+                >
+                  <option value="all">{locale === 'ar' ? '🌐 جميع اللغات' : '🌐 All Languages'}</option>
+                  <option value="ar">{locale === 'ar' ? '🇸🇦 العربية' : '🇸🇦 Arabic'}</option>
+                  <option value="en">{locale === 'ar' ? '🇺🇸 الإنجليزية' : '🇺🇸 English'}</option>
+                </select>
+              </div>
+
+              {/* Sort By */}
+              <div className="relative">
+                <svg 
+                  className={`absolute ${locale === 'ar' ? 'right-3' : 'left-3'} top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5`}
+                  fill="none" 
+                  stroke="currentColor" 
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12" />
+                </svg>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value as 'newest' | 'oldest' | 'popular' | 'alphabetical')}
+                  className={`w-full ${locale === 'ar' ? 'pr-10 pl-4' : 'pl-10 pr-4'} py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white appearance-none cursor-pointer transition-all hover:border-blue-400`}
+                >
+                  <option value="newest">
+                    {locale === 'ar' ? '📅 الأحدث أولاً' : '📅 Newest First'}
+                  </option>
+                  <option value="oldest">
+                    {locale === 'ar' ? '📆 الأقدم أولاً' : '📆 Oldest First'}
+                  </option>
+                  <option value="alphabetical">
+                    {locale === 'ar' ? '🔤 ترتيب أبجدي' : '🔤 Alphabetical'}
+                  </option>
+                  <option value="popular">
+                    {locale === 'ar' ? '⭐ الأكثر شمولاً' : '⭐ Most Comprehensive'}
+                  </option>
+                </select>
+              </div>
             </div>
             
             {/* View Mode Toggle */}
