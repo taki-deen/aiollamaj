@@ -571,16 +571,14 @@ const BlogPage: React.FC = () => {
                   <meta itemProp="url" content={`${window.location.origin}/blog/${report._id}`} />
                   <meta itemProp="image" content={report.userId?.avatarUrl ? `${process.env.REACT_APP_API_URL?.replace('/api', '') || 'http://localhost:5000'}${report.userId.avatarUrl}` : `${window.location.origin}/logo512.png`} />
 
-                  {/* Rating */}
+                  {/* Rating - عرض فقط */}
                   {showRatings && (
-                    <div className="mb-4 pb-4 border-b border-gray-200 dark:border-gray-700" onClick={(e) => e.stopPropagation()}>
+                    <div className="mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
                       <RatingStars
                         reportId={report._id}
                         averageRating={report.averageRating || 0}
                         totalRatings={report.totalRatings || 0}
-                        userRating={report.ratings?.find(r => r.userId === user?._id)?.rating}
-                        onRate={(rating) => handleRate(report._id, rating)}
-                        readonly={!user}
+                        readonly={true}
                         showCount={true}
                         size="md"
                       />
