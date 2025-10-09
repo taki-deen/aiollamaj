@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import { useTheme } from '../contexts/ThemeContext';
 import { useLocale } from '../contexts/LocaleContext';
 import { getStatusColor, getStatusText, formatDate } from '../utils/reportHelpers';
@@ -29,6 +30,7 @@ const UserReports: React.FC<UserReportsProps> = ({ user, onUploadNew }) => {
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const { theme } = useTheme();
   const { locale, t } = useLocale();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchReports();
@@ -350,7 +352,7 @@ const UserReports: React.FC<UserReportsProps> = ({ user, onUploadNew }) => {
                       {report.status === 'completed' && (
                         <>
                           <button
-                            onClick={() => onNavigate?.(`/edit-report/${report._id}`)}
+                            onClick={() => navigate(`/edit-report/${report._id}`)}
                             className="px-4 py-2 bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors duration-200"
                             title={locale === 'ar' ? 'تعديل' : 'Edit'}
                           >
