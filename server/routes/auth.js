@@ -43,7 +43,7 @@ const fileFilter = (req, file, cb) => {
   cb(new Error('Only image files are allowed'));
 };
 
-const upload = multer({ storage, fileFilter, limits: { fileSize: 5 * 1024 * 1024 } });
+const upload = multer({ storage, fileFilter, limits: { fileSize: 10 * 1024 * 1024 } });
 
 // Public routes - مع Rate Limiting للمصادقة
 router.post('/register', authLimiter, register);
