@@ -13,7 +13,8 @@ const {
   togglePublicStatus,
   updateReport,
   regenerateReport,
-  deleteReport,
+  deleteRe
+  port,
   getAllReportsForAdmin,
   deleteReportByAdmin,
   addRating,
